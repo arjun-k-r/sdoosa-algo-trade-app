@@ -2,14 +2,14 @@
   {
     "name": "VWAP",
     "enabled": true,
-    "brokers": ["upstox"],
+    "brokers": ["zerodha"],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
     "candlesInterval": 15,
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
-      "totalCapital": 10000,
+      "totalCapital": 1000,
       "riskPercentagePerTrade": 1.0,
       "maxTrades": 4
     },
@@ -40,18 +40,20 @@
       "YESBANK",
       "HINDZINC",
       "BIOCON",
-      "NIITTECH",
-      "ITC",
-      "M&MFIN",
-      "AJANTPHARM",
       "VOLTAS",
       "STAR",
-      "JUBLFOOD",
-      "EXIDEIND",
       "ZEEL",
       "INDIACEM",
-      "TATAGLOBAL",
-      "JUSTDIAL"
+      "JUSTDIAL",
+      "CIPLA",
+      "PVR",
+      "HAVELLS",
+      "ZEEL",
+      "TATACONSUM",
+      "DLF",
+      "GRASIM",
+      "CUMMINSIND",
+      "UBL"
     ]
   },
   {

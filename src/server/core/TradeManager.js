@@ -14,8 +14,8 @@ import {
   isIntradaySquareOffTime,
   calculateProfitLossCharges,
   formatDateToString,
-  getIntradaySquareOffTime, 
-  isMarketOpen 
+  getIntradaySquareOffTime,
+  isMarketOpen
 } from '../utils/utils.js';
 import Ticker from './Ticker.js';
 import { getStrategyInstance } from '../utils/strategy-utils.js';
@@ -278,7 +278,7 @@ class TradeManager {
     try {
       this.trades = fs.readJsonSync(this.tradesFilePath);
     } catch (err) {
-      logger.error(`TradeManager: loadTradeSignalsFromFile. Error: ${JSON.stringify(err)}`);
+      logger.error(`TradeManager: loadTradesFromFile. Error: ${JSON.stringify(err)}`);
     }
     logger.info(`TradeManaer: ${this.trades ? this.trades.length : 0} trades loaded from file ${this.tradesFilePath}`);
   }

@@ -8,8 +8,10 @@ import Zerodha from '../brokers/zerodha/Zerodha.js';
 import Upstox from '../brokers/upstox/Upstox.js';
 import TradeManager from './TradeManager.js';
 import VWAPStrategy from '../strategies/VWAPStrategy.js';
+import SupportResistanceStratergy from '../strategies/SupportResistanceStratergy.js';
+
 import { getConfig } from '../config.js';
-import { isMarketClosedForTheDay } from '../utils/utils.js'; 
+import { isMarketClosedForTheDay } from '../utils/utils.js';
 
 const config = getConfig();
 
@@ -38,11 +40,13 @@ class AlgoManager {
       });
     }
 
-    if (isMarketClosedForTheDay()) {
-      logger.info(`Algo Manager: Market closed for the day, so not starting..`);
-      return res.status(400).send({
-        error: 'Market closed for the day.'
-      });
+    if (!config.sandboxTesting) {
+      if (isMarketClosedForTheDay()) {
+        logger.info(`Algo Manager: Market closed for the day, so not starting..`);
+        return res.status(400).send({
+          error: 'Market closed for the day.'
+        });
+      }
     }
 
     if (this.isAlgoRunning(broker)) {
@@ -55,17 +59,20 @@ class AlgoManager {
       Zerodha.loadInstruments().then(instruments => {
 
         this.algoRunning[broker] = true;
-        
+
         // start trade manager first
         TradeManager.getInstance().start();
 
         VWAPStrategy.start();
+        SupportResistanceStratergy.start();
 
         res.status(200).send({
           isAlgoRunning: this.algoRunning
         });
 
       }).catch(err => {
+
+        logger.error('zerodha starting failed => ', err);
         res.status(500).send({
           error: 'Failed to load instruments data from Zerodha',
           details: err
@@ -79,6 +86,7 @@ class AlgoManager {
       TradeManager.getInstance().start();
 
       VWAPStrategy.start();
+      SupportResistanceStratergy.start();
 
       res.status(200).send({
         isAlgoRunning: this.algoRunning
@@ -102,6 +110,10 @@ class AlgoManager {
 
     if (VWAPStrategy.isEnabled()) {
       VWAPStrategy.stop();
+    }
+
+    if (SupportResistanceStratergy.isEnabled()) {
+      SupportResistanceStratergy.stop();
     }
 
     // stop trade manager

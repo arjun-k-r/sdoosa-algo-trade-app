@@ -10,7 +10,7 @@ var clean = require('gulp-clean');
 
 gulp.task("lint", [], function () {
   return gulp.src(['src/**/*.js'])
-    .pipe(eslint())
+    .pipe(eslint({ fix: true }))
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
 });
@@ -19,7 +19,9 @@ gulp.task("bundle-client", ["lint"], function () {
   return browserify({
     entries: "./src/client/main.js",
     debug: true
-  }).transform(babelify, { presets: ["@babel/preset-env", "@babel/preset-react"] })
+  }).transform(babelify, {
+    presets: ["@babel/preset-env", "@babel/preset-react"]
+  })
     .transform(reactify)
     .bundle()
     .pipe(source("main.js"))
@@ -44,7 +46,8 @@ gulp.task('deploy-server-config', [], function () {
 gulp.task('deploy-server', ["lint", "deploy-server-config"], function () {
   return gulp.src('src/server/**/*.js')
     .pipe(babel({
-      presets: ['@babel/env']
+      presets: ['@babel/env'],
+      plugins: ["@babel/plugin-transform-async-to-generator"]
     }))
     .pipe(gulp.dest('dist/server'));
 });

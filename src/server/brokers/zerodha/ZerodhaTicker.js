@@ -99,7 +99,7 @@ class ZerodhaTicker {
     this.ticker.connect();
     this.ticker.on('ticks', this.onTicks);
     this.ticker.on('connect', this.onConnected);
-    
+
     this.ticker.on('noreconnect', () => {
       logger.error('Zerodha ticker failed to reconnect after maxim re-attemtps');
       this.onDisConnected();
@@ -172,10 +172,9 @@ class ZerodhaTicker {
   }
 
   onTicks(ticks) {
-    console.log('zerodha ticks => ', ticks);
+    // console.log('zerodha ticks => ', ticks);
 
     _.each(ticks, tick => {
-
       const liveQuote = {
         tradingSymbol: Instruments.getTradingSymbolByInstrumentToken(tick.instrument_token),
         cmp: parseFloat(tick.last_price),

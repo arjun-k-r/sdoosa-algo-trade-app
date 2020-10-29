@@ -222,11 +222,14 @@ class TradeManager {
         return;
       }
 
-      let now = new Date();
-      if (now > getIntradaySquareOffTime()) {
-        logger.warn(`TradeManager:processInLoop() Exiting as intraday square off time reached`);
-        return this.stop(true);
+      if (!config.sandboxTesting) {
+        let now = new Date();
+        if (now > getIntradaySquareOffTime()) {
+          logger.warn(`TradeManager:processInLoop() Exiting as intraday square off time reached`);
+          return this.stop(true);
+        }
       }
+
 
       this.process().then(() => {
         setTimeout(processInLoop, waitTimeInSeconds * 1000);
@@ -328,9 +331,11 @@ class TradeManager {
 
         this.liveTicksCache[tick.tradingSymbol] = tick;
 
-        if (isIntradaySquareOffTime()) {
-          logger.warn(`TradeManager: intraday square off time reached hence exiting all open positions..`);
-          return this.stop(true);
+        if (!config.sandboxTesting) {
+          if (isIntradaySquareOffTime()) {
+            logger.warn(`TradeManager: intraday square off time reached hence exiting all open positions..`);
+            return this.stop(true);
+          }
         }
 
         const brokers = _.get(config, 'supportedBrokers', []);
@@ -355,18 +360,21 @@ class TradeManager {
   }
 
   checkTradeSignalTriggerAndPlaceOrders(liveQuote = {}, broker) {
-
     const tradingSymbol = liveQuote.tradingSymbol;
 
     const tradeSignalBuy = this.getUntriggeredTradeSignal(tradingSymbol, true, broker);
     const tradeSignalSell = this.getUntriggeredTradeSignal(tradingSymbol, false, broker);
-
     // TODO: How to block the next call until the response of this.executeTrade() resolve/reject
 
+    const near = liveQuote.cmp * .001;
+
+
     if (tradeSignalBuy && !tradeSignalBuy.orderPlacementInProgress) {
+
+
       const strategyInstance = getStrategyInstance(tradeSignalBuy.strategy);
-      if (strategyInstance &&
-        strategyInstance.shouldPlaceTrade(tradeSignalBuy, liveQuote)) {
+
+      if ((liveQuote.cmp <= tradeSignalSell.trigger) && ((tradeSignalBuy.trigger - liveQuote.cmp) < near) && strategyInstance.shouldPlaceTrade(tradeSignalBuy, liveQuote)) {
 
         tradeSignalBuy.orderPlacementInProgress = true;
 
@@ -392,7 +400,7 @@ class TradeManager {
 
     if (tradeSignalSell && !tradeSignalSell.orderPlacementInProgress) {
       const strategyInstance = getStrategyInstance(tradeSignalSell.strategy);
-      if (strategyInstance &&
+      if ((liveQuote.cmp >= tradeSignalSell.trigger) && ((liveQuote.cmp - tradeSignalSell.trigger) < near) &&
         strategyInstance.shouldPlaceTrade(tradeSignalSell, liveQuote)) {
 
         tradeSignalSell.orderPlacementInProgress = true;
@@ -1033,14 +1041,25 @@ class TradeManager {
 
   getUntriggeredTradeSignal(tradingSymbol, isBuy, broker) {
     return _.find(this.tradeSignals, ts => {
-      return ts.broker === broker &&
-        !ts.disabled &&
-        !ts.isTriggered &&
-        ts.tradingSymbol === tradingSymbol &&
-        ts.isBuy === isBuy;
+      if (ts.broker === broker) {
+        if (ts.tradingSymbol === tradingSymbol) {
+          if (!ts.disabled) {
+            if (!ts.isTriggered) {
+              if (ts.isBuy === isBuy) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      //   return ts.broker === broker &&
+      //     !ts.disabled &&
+      //     !ts.isTriggered &&
+      //     ts.tradingSymbol === tradingSymbol &&
+      //     ts.isBuy === isBuy;
+
     });
   }
-
   isTradeAlreadyPlaced(tradeSignal, strategyName) {
     let tradePlaced = false;
     _.each(this.trades, trade => {

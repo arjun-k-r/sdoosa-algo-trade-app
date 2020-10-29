@@ -3,7 +3,7 @@
 */
 
 import _ from 'lodash';
-import { getHolidays }  from '../config.js';
+import { getHolidays } from '../config.js';
 
 const holidays = getHolidays();
 
@@ -377,3 +377,51 @@ export const shouldPlaceTrade = (tradeSignal, cmp, considerEqual = false) => {
     return false;
   }
 };
+
+
+export function average(nums) {
+  return nums.reduce((a, b) => (a + b)) / nums.length;
+}
+
+export function createClustors(points, allowedChange, minClusterLength = 1) {
+  const breakpoints = points.sort((a, b) => a - b);
+  const breakpointClusters = [];
+  let lastCluster = [];
+  _.each(breakpoints, (b, i) => {
+    if (lastCluster.length) {
+      const lastValue = lastCluster[lastCluster.length - 1];
+      const change = b - lastValue;
+      const negligible = b * allowedChange;
+      if (change < negligible) {
+        lastCluster.push(b);
+      } else {
+        if (lastCluster.length && minClusterLength <= lastCluster.length)
+          breakpointClusters.push(lastCluster);
+        lastCluster = [b];
+      }
+    } else {
+      lastCluster.push(b);
+    }
+  });
+  if (lastCluster.length && minClusterLength < lastCluster.length)
+    breakpointClusters.push(lastCluster);
+  return breakpointClusters;
+}
+
+export function range(arr, index, n) {
+  const res = [];
+  for (let i = n; i >= 1; i--) {
+    const j = index - i;
+    const item = arr[j];
+    if (item)
+      res.push(item);
+  }
+  res.push(arr[index]);
+  for (let i = 1; i <= n; i++) {
+    const j = index + i;
+    const item = arr[j];
+    if (item)
+      res.push(item);
+  }
+  return res;
+}

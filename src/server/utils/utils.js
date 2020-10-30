@@ -359,19 +359,19 @@ export const getDelta = (price) => {
 
 export const shouldPlaceTrade = (tradeSignal, cmp, considerEqual = false) => {
   if (considerEqual === true) {
-    if (tradeSignal.isBuy && cmp <= tradeSignal.trigger) {
+    if (tradeSignal.isBuy && cmp >= tradeSignal.trigger) {
       return true;
     }
-    if (!tradeSignal.isBuy && cmp >= tradeSignal.trigger) {
+    if (!tradeSignal.isBuy && cmp <= tradeSignal.trigger) {
       return true;
     }
     return false;
 
   } else {
-    if (tradeSignal.isBuy && cmp < tradeSignal.trigger) {
+    if (tradeSignal.isBuy && cmp > tradeSignal.trigger) {
       return true;
     }
-    if (!tradeSignal.isBuy && cmp > tradeSignal.trigger) {
+    if (!tradeSignal.isBuy && cmp < tradeSignal.trigger) {
       return true;
     }
     return false;

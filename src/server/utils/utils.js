@@ -359,19 +359,19 @@ export const getDelta = (price) => {
 
 export const shouldPlaceTrade = (tradeSignal, cmp, considerEqual = false) => {
   if (considerEqual === true) {
-    if (tradeSignal.isBuy && cmp >= tradeSignal.trigger) {
+    if (tradeSignal.isBuy && cmp <= tradeSignal.trigger) {
       return true;
     }
-    if (!tradeSignal.isBuy && cmp <= tradeSignal.trigger) {
+    if (!tradeSignal.isBuy && cmp >= tradeSignal.trigger) {
       return true;
     }
     return false;
 
   } else {
-    if (tradeSignal.isBuy && cmp > tradeSignal.trigger) {
+    if (tradeSignal.isBuy && cmp < tradeSignal.trigger) {
       return true;
     }
-    if (!tradeSignal.isBuy && cmp < tradeSignal.trigger) {
+    if (!tradeSignal.isBuy && cmp > tradeSignal.trigger) {
       return true;
     }
     return false;
@@ -383,7 +383,7 @@ export function average(nums) {
   return nums.reduce((a, b) => (a + b)) / nums.length;
 }
 
-export function createClustors(points, allowedChange, minClusterLength = 1) {
+export function createClustors(points, allowedChange) {
   const breakpoints = points.sort((a, b) => a - b);
   const breakpointClusters = [];
   let lastCluster = [];
@@ -395,7 +395,7 @@ export function createClustors(points, allowedChange, minClusterLength = 1) {
       if (change < negligible) {
         lastCluster.push(b);
       } else {
-        if (lastCluster.length && minClusterLength <= lastCluster.length)
+        if (lastCluster.length)
           breakpointClusters.push(lastCluster);
         lastCluster = [b];
       }
@@ -403,7 +403,7 @@ export function createClustors(points, allowedChange, minClusterLength = 1) {
       lastCluster.push(b);
     }
   });
-  if (lastCluster.length && minClusterLength < lastCluster.length)
+  if (lastCluster.length)
     breakpointClusters.push(lastCluster);
   return breakpointClusters;
 }

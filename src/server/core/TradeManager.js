@@ -371,10 +371,9 @@ class TradeManager {
 
     if (tradeSignalBuy && !tradeSignalBuy.orderPlacementInProgress) {
 
-
       const strategyInstance = getStrategyInstance(tradeSignalBuy.strategy);
 
-      if ((liveQuote.cmp <= tradeSignalSell.trigger) && ((tradeSignalBuy.trigger - liveQuote.cmp) < near) && strategyInstance.shouldPlaceTrade(tradeSignalBuy, liveQuote)) {
+      if ((liveQuote.cmp <= tradeSignalBuy.trigger) && ((tradeSignalBuy.trigger - liveQuote.cmp) < near) && strategyInstance.shouldPlaceTrade(tradeSignalBuy, liveQuote)) {
 
         tradeSignalBuy.orderPlacementInProgress = true;
 

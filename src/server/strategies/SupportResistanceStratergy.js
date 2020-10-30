@@ -28,10 +28,10 @@ class SupportResistanceStrategy extends BaseStrategy {
 
     process() {
         logger.info(`${this.name}: process`);
-        if (!this.calculatedSR) {
-            this.calculatedSR = true;
+        const timegap = this.intervel * 60000;
+        if (!this.lastCandleTimestamp || (new Date(this.lastCandleTimestamp).getTime() + timegap < Date.now())) {
             return this.fetchPrevNDayData(this.nDays, this.intervel).then(() => {
-                this.findSupportAndResistance();
+                return this.findSupportAndResistance();
             });
         }
         return Promise.resolve();
@@ -48,23 +48,19 @@ class SupportResistanceStrategy extends BaseStrategy {
                 data.srpoints = SupportResistance.find(data.prevNDayData);
                 // console.log(tradingSymbol, "data.srpoints", data.srpoints);
                 const lastCandle = data.prevNDayData[data.prevNDayData.length - 1];
-                const secondLastCandle = data.prevNDayData[data.prevNDayData.length - 2];
-
+                this.lastCandleTimestamp = lastCandle.timestamp;
                 const longPosition = lastCandle.open < lastCandle.close;
 
                 _.each(data.srpoints, srpoint => {
                     if (longPosition) {
                         const r = srpoint[1];
-                        if (r > lastCandle.close) {
+                        if (r >= lastCandle.close) {
                             const near = r * neglible;
                             if (lastCandle.close + near >= r) {
-                                if (lastCandle.volume > secondLastCandle.volume) {
-                                    _.each(brokers, broker => {
-                                        this.generateTradeSignals(data, longPosition, roundToValidPrice(r + .1), broker);
-                                        logger.info(`${this.name} ${tradingSymbol} Trade signals generated for broker ${broker}`);
-                                    });
-                                }
-
+                                _.each(brokers, broker => {
+                                    this.generateTradeSignals(data, lastCandle, roundToValidPrice(r + .1), broker);
+                                    logger.info(`${this.name} ${tradingSymbol} Trade signals generated for broker ${broker}`);
+                                });
                             }
                         }
                     } else {
@@ -73,7 +69,7 @@ class SupportResistanceStrategy extends BaseStrategy {
                             const near = s * neglible;
                             if (lastCandle.close - near <= s) {
                                 _.each(brokers, broker => {
-                                    this.generateTradeSignals(data, longPosition, roundToValidPrice(s - .1), broker);
+                                    this.generateTradeSignals(data, lastCandle, roundToValidPrice(s - .1), broker);
                                 });
                             }
                         }
@@ -88,17 +84,14 @@ class SupportResistanceStrategy extends BaseStrategy {
         if (super.shouldPlaceTrade(tradeSignal, liveQuote) === false) {
             return false;
         }
-
         const cmp = liveQuote.cmp;
         if (shouldPlaceTrade(tradeSignal, cmp) === false) {
             return false;
         }
-
         const tm = TradeManager.getInstance();
         if (tm.isTradeAlreadyPlaced(tradeSignal, this.getName())) {
             return false;
         }
-
         let isReverseTrade = false;
         const oppTradeSignal = tm.getOppositeTradeSignal(tradeSignal);
         if (oppTradeSignal && oppTradeSignal.isTriggered) {
@@ -108,22 +101,19 @@ class SupportResistanceStrategy extends BaseStrategy {
                 isReverseTrade = true;
             }
         }
-
         if (isReverseTrade === false) {
             if (_.get(this.strategy, 'enableRiskManagement', false) === true) {
                 const MAX_TRADES_PER_DAY = parseInt(_.get(this.strategy, 'withRiskManagement.maxTrades', 1));
                 const numberOfTradesPlaced = tm.getNumberOfStocksTradesPlaced(this.getName());
                 if (numberOfTradesPlaced >= MAX_TRADES_PER_DAY) {
-
                     tm.disableTradeSignal(tradeSignal);
                     this.maxTradesReached = true;
                     return false;
                 }
             }
         }
-        console.log("tradeSignal", tradeSignal);
-        console.log("liveQuote", liveQuote);
-        return false;
+
+        return true;
     }
 
     generateTradeSignals(data, lastCandle, price, broker) {
@@ -155,7 +145,7 @@ class SupportResistanceStrategy extends BaseStrategy {
             MARGIN = parseInt(_.get(this.strategy, 'withoutRiskManagement.margin', 1));
         }
 
-        if (longPosition && !ts1) {
+        if (longPosition) {
             ts1 = {};
             ts1.broker = broker;
             ts1.placeBracketOrder = false;
@@ -192,7 +182,7 @@ class SupportResistanceStrategy extends BaseStrategy {
             logger.info(`${this.name}: ${data.tradingSymbol} LONG trade signal generated for ${broker} @ ${ts1.trigger}`);
         }
 
-        if (!longPosition && !ts2) {
+        if (!longPosition) {
             ts2 = {};
             ts2.broker = broker;
             ts2.placeBracketOrder = false;

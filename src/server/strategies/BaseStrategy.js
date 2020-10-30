@@ -270,7 +270,7 @@ class BaseStrategy {
                 logger.error(`${this.name}: ${tradingSymbol} No trace candles fetched..`);
                 return callback(null, { data, tradingSymbol, error: 'No trace candles fetched' });
               }
-
+              data.candles = candles;
               logger.debug(`${this.name}: ${tradingSymbol} tradeCandles = ${candles.length}, interval=${this.traceCandlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
 
               if (data.traceCandlesPrevDays && data.traceCandlesPrevDays.length > 0) {
@@ -374,50 +374,6 @@ class BaseStrategy {
         _.each(results, result => {
           if (result.error) {
             logger.error(`${this.name}: fetchPrevDayData: error while fetching previous day data for ${result.tradingSymbol}`);
-          }
-        });
-        resolve(); // resolving the promise after fetching candles for all stocks
-      });
-    });
-  }
-
-  fetchPrevNDayData(n = 30, interval = 15) {
-    // this function fetch prev day data like ohlc and volume and stores in cache, it should be called only once ideally when the strategy starts
-    const from = new Date(getMarketStartTime());
-    const to = new Date(getMarketEndTime());
-
-    from.setDate(from.getDate() - n); // fetch n days data 
-    to.setDate(to.getDate());
-
-    return new Promise((resolve, reject) => {
-      async.series(_.map(this.stocks, tradingSymbol => {
-        return (callback) => {
-          HistoryAPIs.fetchHistory(tradingSymbol, interval, from, to).then(candles => {
-            if (!candles || candles.length === 0) {
-              logger.error(`${this.name}: ${data.tradingSymbol} Not able to fetch prev n day data as no candles found.`);
-              return callback(null, { tradingSymbol, error: 'Could not fetch prev day data' });
-            }
-            logger.debug(`${this.name}: ${tradingSymbol}: ${interval} interval, ${n} days candles fetched = ${candles.length}`);
-
-            let data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-            if (!data) {
-              data = {
-                tradingSymbol: tradingSymbol,
-                prevNDayData: candles
-              };
-              this.stocksCache.push(data);
-            } else {
-              data.prevNDayData = candles;
-            }
-            callback(null, { data, tradingSymbol });
-          }).catch(err => {
-            callback(null, { data: null, tradingSymbol, error: err });
-          });
-        };
-      }), (err, results) => {
-        _.each(results, result => {
-          if (result.error) {
-            logger.error(`${this.name}: fetchPrevNDayData: error while fetching previous n day data for ${result.tradingSymbol}`);
           }
         });
         resolve(); // resolving the promise after fetching candles for all stocks

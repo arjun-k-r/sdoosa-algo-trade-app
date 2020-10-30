@@ -146,8 +146,8 @@ class VWAPtrategy extends BaseStrategy {
     let ts1 = data.buyTradeSignal[broker];
     let ts2 = data.sellTradeSignal[broker];
 
-    const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.6);
-    const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', 1.0);
+    const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.2);
+    const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', 0.4);
 
     let enableRiskManagement = _.get(this.strategy, 'enableRiskManagement', false);
 

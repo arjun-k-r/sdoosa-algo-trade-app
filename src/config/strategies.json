@@ -5,7 +5,7 @@
     "brokers": ["zerodha"],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
-    "candlesInterval": 15,
+    "candlesInterval": 5,
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
@@ -38,7 +38,7 @@
     "brokers": ["zerodha"],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
-    "candlesInterval": 15,
+    "candlesInterval": 5,
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {

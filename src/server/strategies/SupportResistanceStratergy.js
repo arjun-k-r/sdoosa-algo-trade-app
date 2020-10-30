@@ -21,20 +21,13 @@ class SupportResistanceStrategy extends BaseStrategy {
 
     constructor() {
         super('SupportResistance');
-        this.nDays = 7;
-        this.intervel = 5;
-        this.calculatedSR = false;
     }
 
     process() {
         logger.info(`${this.name}: process`);
-        const timegap = this.intervel * 60000;
-        if (!this.lastCandleTimestamp || (new Date(this.lastCandleTimestamp).getTime() + timegap < Date.now())) {
-            return this.fetchPrevNDayData(this.nDays, this.intervel).then(() => {
-                return this.findSupportAndResistance();
-            });
-        }
-        return Promise.resolve();
+        return this.fetchTraceCandlesHistory().then(() => {
+            return this.findSupportAndResistance();
+        });
     }
 
     findSupportAndResistance() {
@@ -43,11 +36,11 @@ class SupportResistanceStrategy extends BaseStrategy {
 
         _.each(this.stocks, tradingSymbol => {
             const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-            if (data && data.prevNDayData && data.prevNDayData.length > 0) {
+            if (data && data.traceCandles && data.traceCandles.length > 0) {
                 // check first candle close with previous day close
-                data.srpoints = SupportResistance.find(data.prevNDayData);
+                data.srpoints = SupportResistance.find(data.traceCandles);
                 // console.log(tradingSymbol, "data.srpoints", data.srpoints);
-                const lastCandle = data.prevNDayData[data.prevNDayData.length - 1];
+                const lastCandle = data.traceCandles[data.traceCandles.length - 1];
                 this.lastCandleTimestamp = lastCandle.timestamp;
                 const longPosition = lastCandle.open < lastCandle.close;
 
@@ -112,7 +105,6 @@ class SupportResistanceStrategy extends BaseStrategy {
                 }
             }
         }
-
         return true;
     }
 
@@ -130,8 +122,8 @@ class SupportResistanceStrategy extends BaseStrategy {
         let ts1 = data.buyTradeSignal[broker];
         let ts2 = data.sellTradeSignal[broker];
 
-        const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.6);
-        const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', 1.0);
+        const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.2);
+        const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', .4);
 
         let enableRiskManagement = _.get(this.strategy, 'enableRiskManagement', false);
 

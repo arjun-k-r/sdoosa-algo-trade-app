@@ -14,8 +14,8 @@ import {
   isIntradaySquareOffTime,
   calculateProfitLossCharges,
   formatDateToString,
-  getIntradaySquareOffTime, 
-  isMarketOpen 
+  getIntradaySquareOffTime,
+  isMarketOpen
 } from '../utils/utils.js';
 import Ticker from './Ticker.js';
 import { getStrategyInstance } from '../utils/strategy-utils.js';
@@ -222,10 +222,12 @@ class TradeManager {
         return;
       }
 
-      let now = new Date();
-      if (now > getIntradaySquareOffTime()) {
-        logger.warn(`TradeManager:processInLoop() Exiting as intraday square off time reached`);
-        return this.stop(true);
+      if (!config.sandboxTesting) {
+        let now = new Date();
+        if (now > getIntradaySquareOffTime()) {
+          logger.warn(`TradeManager:processInLoop() Exiting as intraday square off time reached`);
+          return this.stop(true);
+        }
       }
 
       this.process().then(() => {
@@ -278,7 +280,7 @@ class TradeManager {
     try {
       this.trades = fs.readJsonSync(this.tradesFilePath);
     } catch (err) {
-      logger.error(`TradeManager: loadTradeSignalsFromFile. Error: ${JSON.stringify(err)}`);
+      logger.error(`TradeManager: loadTradesFromFile. Error: ${JSON.stringify(err)}`);
     }
     logger.info(`TradeManaer: ${this.trades ? this.trades.length : 0} trades loaded from file ${this.tradesFilePath}`);
   }
@@ -328,11 +330,12 @@ class TradeManager {
 
         this.liveTicksCache[tick.tradingSymbol] = tick;
 
-        if (isIntradaySquareOffTime()) {
-          logger.warn(`TradeManager: intraday square off time reached hence exiting all open positions..`);
-          return this.stop(true);
+        if (!config.sandboxTesting) {
+          if (isIntradaySquareOffTime()) {
+            logger.warn(`TradeManager: intraday square off time reached hence exiting all open positions..`);
+            return this.stop(true);
+          }
         }
-
         const brokers = _.get(config, 'supportedBrokers', []);
         _.each(brokers, broker => {
           //logger.debug(`checkTradeSignalTriggerAndPlaceOrders: ${broker} ${tick.tradingSymbol}`);
@@ -1141,4 +1144,3 @@ module.exports.getInstance = () => { // singleton class
   }
   return _instance;
 };
-

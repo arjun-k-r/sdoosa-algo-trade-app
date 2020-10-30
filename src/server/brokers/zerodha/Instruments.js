@@ -5,7 +5,7 @@
 import _ from 'lodash';
 
 class Instruments {
-  
+
   constructor() {
     this.instruments = [];
   }
@@ -23,10 +23,10 @@ class Instruments {
   }
 
   getTradingSymbolByInstrumentToken(instrumentToken) {
-    if (_.isEmpty(instrumentToken)) {
+    if (!instrumentToken) {
       return '';
     }
-    const instrument = _.find(this.instruments, i => i.instrument_token === instrumentToken);
+    const instrument = _.find(this.instruments, i => i.instrument_token == instrumentToken);
     return instrument.tradingsymbol || '';
   }
 }

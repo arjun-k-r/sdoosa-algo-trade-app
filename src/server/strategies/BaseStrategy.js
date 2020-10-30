@@ -4,7 +4,7 @@
 
 import _ from 'lodash';
 import async from 'async';
-import { getStrategies } from '../config.js';
+import { getStrategies, getConfig } from '../config.js';
 import {
   parseTimestamp,
   isMarketClosedForTheDay,
@@ -21,6 +21,7 @@ import HistoryAPIs from '../core/HistoryAPIs.js';
 import Zerodha from '../brokers/zerodha/Zerodha.js';
 import Upstox from '../brokers/upstox/Upstox.js';
 
+const config = getConfig();
 const strategies = getStrategies();
 
 class BaseStrategy {
@@ -30,7 +31,7 @@ class BaseStrategy {
 
     this.strategy = _.find(strategies, s => s.name === name);
     if (this.strategy) {
-      
+
       logger.info(`---- strategy ${this.name} details => ${JSON.stringify(this.strategy)} ----`);
       console.log(`---- strategy ${this.name} details => `, this.strategy);
 
@@ -67,7 +68,6 @@ class BaseStrategy {
   }
 
   start() {
-
     if (!this.isEnabled()) {
       logger.warn(`${this.name}: Not running strategy as it is not enabled.`);
       return;
@@ -79,13 +79,16 @@ class BaseStrategy {
     }
 
     logger.info(`${this.name}: starting the stragey...`);
-    if (isMarketClosedForTheDay()) {
-      logger.info(`${this.name}: market closed for the day hence exiting the strategy`);
-      return;
+
+    if (!config.sandboxTesting) {
+      if (isMarketClosedForTheDay()) {
+        logger.info(`${this.name}: market closed for the day hence exiting the strategy`);
+        return;
+      }
     }
 
     // wait till market opens
-    if (isMarketOpen() === false) {
+    if (!config.sandboxTesting && isMarketOpen() === false) {
       logger.info(`${this.name} market not yet opened. so waiting...`);
       const now = new Date();
       const waitTimeInMillis = getMarketStartTime().getTime() - now.getTime();
@@ -107,20 +110,23 @@ class BaseStrategy {
   }
 
   run() {
-    
+
     this.isRunning = true;
 
     const processInLoop = () => {
       if (this.stopRequested === true) {
+        this.stopRequested = false;
         logger.warn(`${this.name}: Exiting the strategy as stop signal received`);
         return;
       }
 
       let now = new Date();
-      if (now > getIntradaySquareOffTime()) {
-        logger.warn(`${this.name}: Exiting the strategy as intraday square off time reached`);
-        this.stop();
-        return;
+      if (!config.sandboxTesting) {
+        if (now > getIntradaySquareOffTime()) {
+          logger.warn(`${this.name}: Exiting the strategy as intraday square off time reached`);
+          this.stop();
+          return;
+        }
       }
 
       const waitAndProcess = () => {
@@ -134,6 +140,7 @@ class BaseStrategy {
 
       }).catch(err => {
         logger.error(`${this.name}: Caught with error in process. ${JSON.stringify(err)}`);
+        console.log(err);
         waitAndProcess();
 
       });
@@ -263,7 +270,7 @@ class BaseStrategy {
                 logger.error(`${this.name}: ${tradingSymbol} No trace candles fetched..`);
                 return callback(null, { data, tradingSymbol, error: 'No trace candles fetched' });
               }
-
+              data.candles = candles;
               logger.debug(`${this.name}: ${tradingSymbol} tradeCandles = ${candles.length}, interval=${this.traceCandlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
 
               if (data.traceCandlesPrevDays && data.traceCandlesPrevDays.length > 0) {
@@ -341,7 +348,7 @@ class BaseStrategy {
           HistoryAPIs.fetchHistory(tradingSymbol, 'day', from, to).then(candles => {
             if (!candles || candles.length === 0) {
               logger.error(`${this.name}: ${data.tradingSymbol} Not able to fetch prev day data as no candles found.`);
-              return callback(null, { tradingSymbol, error: 'Could not fetch prev day data'});
+              return callback(null, { tradingSymbol, error: 'Could not fetch prev day data' });
             }
             logger.debug(`${this.name}: ${tradingSymbol}: days candles fetched = ${candles.length}`);
 

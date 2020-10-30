@@ -32,7 +32,7 @@ class VWAPtrategy extends BaseStrategy {
     }
 
     return this.fetchCandlesHistory().then(() => {
-      
+
       const now = new Date();
       if (now < this.strategyStartTime) {
         return;
@@ -113,7 +113,7 @@ class VWAPtrategy extends BaseStrategy {
           if (shortDecisionCandle) {
             logger.info(`${this.name}: process: ${tradingSymbol} shortDecisionCandle = ${formatTimestampToString(shortDecisionCandle.timestamp)}`);
           }
-          
+
           const brokers = _.get(this.strategy, 'brokers', []);
           if (brokers.length === 0) {
             logger.error(`${this.name}: generateTradeSignals: no brokers configured for this strategy..`);
@@ -125,7 +125,7 @@ class VWAPtrategy extends BaseStrategy {
             logger.info(`${this.name} ${tradingSymbol} Trade signals generated for broker ${broker}`);
           });
 
-        } catch(err) {
+        } catch (err) {
           console.log('error ====> ', err);
         }
       });
@@ -146,8 +146,8 @@ class VWAPtrategy extends BaseStrategy {
     let ts1 = data.buyTradeSignal[broker];
     let ts2 = data.sellTradeSignal[broker];
 
-    const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.6);
-    const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', 1.0);
+    const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.2);
+    const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', 0.4);
 
     let enableRiskManagement = _.get(this.strategy, 'enableRiskManagement', false);
 
@@ -255,7 +255,7 @@ class VWAPtrategy extends BaseStrategy {
     if (super.shouldPlaceTrade(tradeSignal, liveQuote) === false) {
       return false;
     }
-    
+
     const cmp = liveQuote.cmp;
     if (shouldPlaceTrade(tradeSignal, cmp) === false) {
       return false;

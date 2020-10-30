@@ -1,15 +1,48 @@
-[
+[      
   {
-    "name": "VWAP",
+    "name": "SupportResistance",
     "enabled": true,
-    "brokers": ["upstox"],
+    "brokers": ["zerodha"],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
-    "candlesInterval": 15,
+    "candlesInterval": 5,
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
-      "totalCapital": 10000,
+      "totalCapital": 1000,
+      "riskPercentagePerTrade": 1.0,
+      "maxTrades": 4
+    },
+    "withoutRiskManagement": {
+      "capitalPerTrade": 1000,
+      "margin": 10
+    },
+    "trailSL": false,
+    "slPercentage": 0.2,
+    "targetPercentage": 0.4,
+    "stocks": [
+      "HCLTECH",      
+      "ICICIPRULI",      
+      "BHARATFORG",
+      "PVR",      
+      "TVSMOTOR",       
+      "ADANIPORTS",
+      "WIPRO",       
+      "AMBUJACEM",       
+      "TATACONSUM"
+    ]
+  },
+  {
+    "name": "VWAP",
+    "enabled": false,
+    "brokers": ["zerodha"],
+    "startTime": "09:30:00",
+    "stopTime": "15:01:00",
+    "candlesInterval": 5,
+    "traceCandlesInterval": 5,
+    "enableRiskManagement": true,
+    "withRiskManagement": {
+      "totalCapital": 1000,
       "riskPercentagePerTrade": 1.0,
       "maxTrades": 4
     },
@@ -20,39 +53,7 @@
     "trailSL": false,
     "slPercentage": 0.6,
     "targetPercentage": 1.4,
-    "stocks": [
-      "ICICIBANK",
-      "HINDALCO",
-      "TATAMOTORS",
-      "BAJFINANCE",
-      "TATASTEEL",
-      "DIVISLAB",
-      "TITAN",
-      "RECLTD",
-      "MOTHERSUMI",
-      "PFC",
-      "PNB",
-      "DRREDDY",
-      "NMDC",
-      "RELIANCE",
-      "TECHM",
-      "BHARTIARTL",
-      "YESBANK",
-      "HINDZINC",
-      "BIOCON",
-      "NIITTECH",
-      "ITC",
-      "M&MFIN",
-      "AJANTPHARM",
-      "VOLTAS",
-      "STAR",
-      "JUBLFOOD",
-      "EXIDEIND",
-      "ZEEL",
-      "INDIACEM",
-      "TATAGLOBAL",
-      "JUSTDIAL"
-    ]
+    "stocks": ["WIPRO", "SBILIFE", "AMBUJACEM", "DABUR", "TATACONSUM", "JINDALSTEL", "TATACHEM", "CIPLA", "HAVELLS"]
   },
   {
     "name": "HolyGrail",

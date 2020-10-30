@@ -4,15 +4,13 @@
     "enableSSL": false,
     "sslPort": 8443
   },
-
+  "sandboxTesting" : true,
   "supportedBrokers": [
-    "zerodha", 
-    "upstox"
+    "zerodha"
   ],
 
   "preferredBrokerForTicker": "zerodha",
-  "preferredBrokerForHistoryAPIs": "upstox",
-
+  "preferredBrokerForHistoryAPIs": "zerodha",
   "brokers": {
    "zerodha": {
     "user": "XH1234",

@@ -2,7 +2,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 
-const APP_STORAGE_PATH = 'C:\\algo-trade';
+const APP_STORAGE_PATH = '/home/gokul/Projects/sdoosa-algo-trade-app/src';
 let config = null, users = null, strategies = null, holidays = null;
 
 export const getAppStoragePath = () => {

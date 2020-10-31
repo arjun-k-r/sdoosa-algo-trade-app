@@ -44,6 +44,7 @@ class SupportResistance {
         });
         const breakpoints = [].concat(supportPoints, resistantPoints);
         const clusters = createClustors(breakpoints, neglible);
+
         return clusters.map(cluster => {
             return [cluster[0], cluster[cluster.length - 1]];
         });

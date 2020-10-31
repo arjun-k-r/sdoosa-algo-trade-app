@@ -261,6 +261,9 @@ class BaseStrategy {
                 return callback(null, { data, tradingSymbol });
               }
             }
+            // for running in non market days
+            if (!data.traceCandles)
+              data.traceCandles = data.traceCandlesPrevDays;
 
             HistoryAPIs.fetchHistory(tradingSymbol, this.traceCandlesInterval, from, to).then(candles => {
 

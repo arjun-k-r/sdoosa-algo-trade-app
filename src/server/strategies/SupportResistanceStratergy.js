@@ -12,9 +12,11 @@ import {
     roundToValidPrice,
     calculateSharesWithRiskFactor,
     shouldPlaceTrade,
+    isNear,
     // formatTimestampToString
 } from '../utils/utils.js';
-import SupportResistance from '../indicators/SupportResistance.js';
+// import SupportResistance from '../indicators/SupportResistance.js';
+import sar from "../indicators/SAR";
 import logger from '../logger/logger.js';
 
 class SupportResistanceStrategy extends BaseStrategy {
@@ -37,35 +39,27 @@ class SupportResistanceStrategy extends BaseStrategy {
         _.each(this.stocks, tradingSymbol => {
             const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
             if (data && data.traceCandles && data.traceCandles.length > 0) {
-                // check first candle close with previous day close
-                data.srpoints = SupportResistance.find(data.traceCandles);
-                // console.log(tradingSymbol, "data.srpoints", data.srpoints);
-                const lastCandle = data.traceCandles[data.traceCandles.length - 1];
-                this.lastCandleTimestamp = lastCandle.timestamp;
-                const longPosition = lastCandle.open < lastCandle.close;
 
-                _.each(data.srpoints, srpoint => {
-                    if (longPosition) {
-                        const r = srpoint[1];
-                        if (r >= lastCandle.close) {
-                            const near = r * neglible;
-                            if (lastCandle.close + near >= r) {
-                                _.each(brokers, broker => {
-                                    this.generateTradeSignals(data, lastCandle, roundToValidPrice(r + .1), broker);
-                                    logger.info(`${this.name} ${tradingSymbol} Trade signals generated for broker ${broker}`);
-                                });
-                            }
-                        }
-                    } else {
-                        const s = srpoint[0];
-                        if (s < lastCandle.close) {
-                            const near = s * neglible;
-                            if (lastCandle.close - near <= s) {
-                                _.each(brokers, broker => {
-                                    this.generateTradeSignals(data, lastCandle, roundToValidPrice(s - .1), broker);
-                                });
-                            }
-                        }
+                // check first candle close with previous day close
+                // data.sarpoints = SupportResistance.find(data.traceCandles);
+                data.sarpoints = sar.calculate(data.traceCandles, neglible);
+
+                console.log(tradingSymbol);
+                console.log(data.sarpoints);
+
+                const lastCandle = data.traceCandles[data.traceCandles.length - 1];
+
+                _.each(data.sarpoints, sarpoint => {
+                    const [s, r] = sarpoint;
+                    if (isNear(r, lastCandle.close, neglible, true)) {
+                        _.each(brokers, broker => {
+                            return this.generateTradeSignals(data, true, r, broker);
+                        });
+                    }
+                    if (isNear(s, lastCandle.close, neglible, false)) {
+                        _.each(brokers, broker => {
+                            return this.generateTradeSignals(data, false, s, broker);
+                        });
                     }
                 });
             }
@@ -108,8 +102,8 @@ class SupportResistanceStrategy extends BaseStrategy {
         return true;
     }
 
-    generateTradeSignals(data, lastCandle, price, broker) {
-        const longPosition = lastCandle.open < lastCandle.close;
+    generateTradeSignals(data, longPosition, price, broker) {
+        const lastCandle = data.traceCandles[data.traceCandles.length - 1];
         const tm = TradeManager.getInstance();
 
         if (!data.buyTradeSignal) {

@@ -425,3 +425,14 @@ export function range(arr, index, n) {
   }
   return res;
 }
+
+export function isNear(trigger, cmp, n, buy) {
+  const near = trigger * n;
+  if (trigger >= cmp && trigger - near >= cmp) {
+    return typeof buy === "boolean" && !buy ? false : true;
+  }
+  if (trigger <= cmp && trigger + near >= cmp) {
+    return typeof buy === "boolean" && buy ? false : true;
+  }
+  return false;
+}

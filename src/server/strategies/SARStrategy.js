@@ -20,6 +20,7 @@ import {
 import SAR from "../indicators/SAR.js";
 import logger from '../logger/logger.js';
 const BollingerBands = require('technicalindicators').BollingerBands;
+const VWAP = require('technicalindicators').VWAP;
 
 class SARStrategy extends BaseStrategy {
 
@@ -106,7 +107,8 @@ class SARStrategy extends BaseStrategy {
 
     confirmWithVWAP(data, tradeSignal, liveQuote) {
         const traceCandles = data.traceCandles;
-        const output = formatToInput(traceCandles);
+        const input = formatToInput(traceCandles);
+        const output = VWAP.calculate(input);
         const lastOutput = output[output.length - 1];
         const lastCandle = traceCandles[traceCandles.length - 1];
         if (tradeSignal.isBuy)

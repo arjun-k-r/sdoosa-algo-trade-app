@@ -6,12 +6,12 @@ import {
 } from '../utils/utils.js';
 
 class SAR {
-    isSupport(df, i) {
-        const support = df[i]['low'] < df[i - 1]['low'] && df[i]['low'] < df[i + 1]['low'] && df[i + 1]['low'] < df[i + 2]['low'] && df[i - 1]['low'] < df[i - 2]['low'];
+    isSupport(candles, i) {
+        const support = candles[i]['low'] < candles[i - 1]['low'] && candles[i]['low'] < candles[i + 1]['low'] && candles[i + 1]['low'] < candles[i + 2]['low'] && candles[i - 1]['low'] < candles[i - 2]['low'];
         return support;
     }
-    isResistance(df, i) {
-        const resistance = df[i]['high'] > df[i - 1]['high'] && df[i]['high'] > df[i + 1]['high'] && df[i + 1]['high'] > df[i + 2]['high'] && df[i - 1]['high'] > df[i - 2]['high'];
+    isResistance(candles, i) {
+        const resistance = candles[i]['high'] > candles[i - 1]['high'] && candles[i]['high'] > candles[i + 1]['high'] && candles[i + 1]['high'] > candles[i + 2]['high'] && candles[i - 1]['high'] > candles[i - 2]['high'];
         return resistance;
     }
     calculate(candles, neglible = .005) {

@@ -1,13 +1,13 @@
 
 import VWAPStrategy from '../strategies/VWAPStrategy.js';
-import SupportResistanceStratergy from '../strategies/SupportResistanceStratergy.js';
+import SARStrategy from '../strategies/SARStrategy.js';
 import logger from '../logger/logger.js';
 
 export const getStrategyInstance = (strategy) => {
 
   switch (strategy) {
-    case 'SupportResistance':
-      return SupportResistanceStratergy;
+    case 'SAR':
+      return SARStrategy;
     case 'VWAP':
       return VWAPStrategy;
     default:

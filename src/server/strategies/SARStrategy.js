@@ -15,14 +15,14 @@ import {
     isNear,
     // formatTimestampToString
 } from '../utils/utils.js';
-// import SupportResistance from '../indicators/SupportResistance.js';
-import sar from "../indicators/SAR";
+// import SAR from '../indicators/SAR.js';
+import SAR from "../indicators/SAR.js";
 import logger from '../logger/logger.js';
 
-class SupportResistanceStrategy extends BaseStrategy {
+class SARStrategy extends BaseStrategy {
 
     constructor() {
-        super('SupportResistance');
+        super('SAR');
     }
 
     process() {
@@ -41,8 +41,8 @@ class SupportResistanceStrategy extends BaseStrategy {
             if (data && data.traceCandles && data.traceCandles.length > 0) {
 
                 // check first candle close with previous day close
-                // data.sarpoints = SupportResistance.find(data.traceCandles);
-                data.sarpoints = sar.calculate(data.traceCandles, neglible);
+                // data.sarpoints = SAR.find(data.traceCandles);
+                data.sarpoints = SAR.calculate(data.traceCandles, neglible);
 
                 console.log(tradingSymbol);
                 console.log(data.sarpoints);
@@ -217,4 +217,4 @@ class SupportResistanceStrategy extends BaseStrategy {
     }
 }
 
-module.exports = new SupportResistanceStrategy(); // singleton class
+module.exports = new SARStrategy(); // singleton class

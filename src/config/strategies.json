@@ -1,6 +1,6 @@
 [      
   {
-    "name": "SupportResistance",
+    "name": "SAR",
     "enabled": true,
     "brokers": ["zerodha"],
     "startTime": "09:30:00",

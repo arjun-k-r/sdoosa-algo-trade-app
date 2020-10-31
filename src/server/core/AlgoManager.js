@@ -8,7 +8,7 @@ import Zerodha from '../brokers/zerodha/Zerodha.js';
 import Upstox from '../brokers/upstox/Upstox.js';
 import TradeManager from './TradeManager.js';
 import VWAPStrategy from '../strategies/VWAPStrategy.js';
-import SupportResistanceStratergy from '../strategies/SupportResistanceStratergy.js';
+import SARStrategy from '../strategies/SARStrategy.js';
 
 import { getConfig } from '../config.js';
 import { isMarketClosedForTheDay } from '../utils/utils.js';
@@ -64,7 +64,7 @@ class AlgoManager {
         TradeManager.getInstance().start();
 
         VWAPStrategy.start();
-        SupportResistanceStratergy.start();
+        SARStrategy.start();
 
         res.status(200).send({
           isAlgoRunning: this.algoRunning
@@ -86,7 +86,7 @@ class AlgoManager {
       TradeManager.getInstance().start();
 
       VWAPStrategy.start();
-      SupportResistanceStratergy.start();
+      SARStrategy.start();
 
       res.status(200).send({
         isAlgoRunning: this.algoRunning
@@ -112,8 +112,8 @@ class AlgoManager {
       VWAPStrategy.stop();
     }
 
-    if (SupportResistanceStratergy.isEnabled()) {
-      SupportResistanceStratergy.stop();
+    if (SARStrategy.isEnabled()) {
+      SARStrategy.stop();
     }
 
     // stop trade manager

@@ -383,7 +383,8 @@ export function average(nums) {
   return nums.reduce((a, b) => (a + b)) / nums.length;
 }
 
-export function createClustors(points, allowedChange) {
+export function createClustors(points, allowedChangePercentage) {
+  const allowedChange = allowedChangePercentage / 100;
   const breakpoints = points.sort((a, b) => a - b);
   const breakpointClusters = [];
   let lastCluster = [];
@@ -426,13 +427,35 @@ export function range(arr, index, n) {
   return res;
 }
 
-export function isNear(trigger, cmp, n, buy) {
-  const near = trigger * n;
-  if (trigger >= cmp && trigger - near >= cmp) {
-    return typeof buy === "boolean" && !buy ? false : true;
+export function isNear(trigger, cmp, allowedChangePercentage, buy) {
+  const allowedChange = allowedChangePercentage / 100;
+  const near = trigger * allowedChange;
+  let buyable = false, sellable = false;
+  if (trigger >= cmp && (cmp + near) >= trigger) {
+    buyable = true;
   }
-  if (trigger <= cmp && trigger + near >= cmp) {
-    return typeof buy === "boolean" && buy ? false : true;
+  if (trigger <= cmp && (cmp - near) <= trigger) {
+    sellable = true;
   }
-  return false;
+  if (typeof buy === "boolean") {
+    return buy ? buyable : sellable;
+  }
+  return buyable || sellable;
+}
+
+
+export function formatToInput(candles) {
+  const result = {
+    open: [],
+    close: [],
+    high: [],
+    low: [],
+    volume: []
+  };
+  for (i = 0; i < candles.length; i++) {
+    Object.keys(result).forEach(key => {
+      result[key].push(candles[i][key]);
+    });
+  }
+  return result;
 }

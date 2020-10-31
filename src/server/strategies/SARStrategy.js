@@ -4,8 +4,8 @@
 
 import _ from 'lodash';
 import uuid from 'uuid/v4';
-import BaseStrategy from './BaseStrategy.js';
 
+import BaseStrategy from './BaseStrategy.js';
 import TradeManager from '../core/TradeManager.js';
 import {
     // percentageChange,
@@ -13,11 +13,13 @@ import {
     calculateSharesWithRiskFactor,
     shouldPlaceTrade,
     isNear,
+    formatToInput,
     // formatTimestampToString
 } from '../utils/utils.js';
 // import SAR from '../indicators/SAR.js';
 import SAR from "../indicators/SAR.js";
 import logger from '../logger/logger.js';
+const BollingerBands = require('technicalindicators').BollingerBands;
 
 class SARStrategy extends BaseStrategy {
 
@@ -33,8 +35,8 @@ class SARStrategy extends BaseStrategy {
     }
 
     findSupportAndResistance() {
-        const neglible = .005;
         const brokers = _.get(this.strategy, 'brokers', []);
+        const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', .6);
 
         _.each(this.stocks, tradingSymbol => {
             const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
@@ -42,32 +44,79 @@ class SARStrategy extends BaseStrategy {
 
                 // check first candle close with previous day close
                 // data.sarpoints = SAR.find(data.traceCandles);
-                data.sarpoints = SAR.calculate(data.traceCandles, neglible);
+                data.sarpoints = SAR.calculate(data.traceCandles, TARGET_PERCENTAGE);
 
                 console.log(tradingSymbol);
                 console.log(data.sarpoints);
 
                 const lastCandle = data.traceCandles[data.traceCandles.length - 1];
-
+                const isBuy = lastCandle.open < lastCandle.close;
                 _.each(data.sarpoints, sarpoint => {
                     const [s, r] = sarpoint;
-                    if (isNear(r, lastCandle.close, neglible, true)) {
-                        _.each(brokers, broker => {
-                            return this.generateTradeSignals(data, true, r, broker);
-                        });
-                    }
-                    if (isNear(s, lastCandle.close, neglible, false)) {
-                        _.each(brokers, broker => {
-                            return this.generateTradeSignals(data, false, s, broker);
-                        });
+                    if (isBuy) {
+                        if (isNear(r, lastCandle.close, TARGET_PERCENTAGE, true)) {
+                            _.each(brokers, broker => {
+                                return this.generateTradeSignals(data, true, r, broker);
+                            });
+                        }
+                    } else {
+                        if (isNear(s, lastCandle.close, TARGET_PERCENTAGE, false)) {
+                            _.each(brokers, broker => {
+                                return this.generateTradeSignals(data, false, s, broker);
+                            });
+                        }
                     }
                 });
             }
         });
     }
 
-    shouldPlaceTrade(tradeSignal, liveQuote) {
+    confirmTrade = (tradeSignal, liveQuote) => {
+        const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradeSignal.tradingSymbol);
+        if (!data)
+            return false;
+        if (!this.confirmWithBollingerBands(data, tradeSignal, liveQuote)) {
+            return false;
+        }
+        if (!this.confirmWithVWAPs(data, tradeSignal, liveQuote)) {
+            return false;
+        }
+        return true;
+    };
 
+    confirmWithBollingerBands = (data, tradeSignal, liveQuote) => {
+        const period = 14;
+        const traceCandles = data.traceCandles;
+        const input = {
+            period: period,
+            values: traceCandles.map(candle => candle.close),
+            stdDev: 2
+        };
+        const lastCandle = traceCandles[traceCandles.length - 1];
+        const bollingerBands = BollingerBands.calculate(input);
+        const lastBollingerBand = bollingerBands[bollingerBands.length - 1];
+        if (tradeSignal.isBuy && lastCandle.close > lastBollingerBand.middle > lastCandle.open) {
+            return true;
+        }
+        if (!tradeSignal.isBuy && lastCandle.close < lastBollingerBand.middle < lastCandle.open) {
+            return true;
+        }
+        return false;
+    };
+
+    confirmWithVWAP(data, tradeSignal, liveQuote) {
+        const traceCandles = data.traceCandles;
+        const output = formatToInput(traceCandles);
+        const lastOutput = output[output.length - 1];
+        const lastCandle = traceCandles[traceCandles.length - 1];
+        if (tradeSignal.isBuy)
+            return lastOutput < lastCandle.close;
+        if (!tradeSignal.isBuy)
+            return lastOutput > lastCandle.close;
+        return false;
+    }
+
+    shouldPlaceTrade(tradeSignal, liveQuote) {
         if (super.shouldPlaceTrade(tradeSignal, liveQuote) === false) {
             return false;
         }
@@ -106,6 +155,8 @@ class SARStrategy extends BaseStrategy {
         const lastCandle = data.traceCandles[data.traceCandles.length - 1];
         const tm = TradeManager.getInstance();
 
+        const signalType = longPosition ? "buyTradeSignal" : "sellTradeSignal";
+
         if (!data.buyTradeSignal) {
             data.buyTradeSignal = {};
         }
@@ -113,11 +164,8 @@ class SARStrategy extends BaseStrategy {
             data.sellTradeSignal = {};
         }
 
-        let ts1 = data.buyTradeSignal[broker];
-        let ts2 = data.sellTradeSignal[broker];
-
         const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.2);
-        const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', .4);
+        const TARGET_PERCENTAGE = _.get(this.strategy, 'targetPercentage', .6);
 
         let enableRiskManagement = _.get(this.strategy, 'enableRiskManagement', false);
 
@@ -131,89 +179,50 @@ class SARStrategy extends BaseStrategy {
             MARGIN = parseInt(_.get(this.strategy, 'withoutRiskManagement.margin', 1));
         }
 
-        if (longPosition) {
-            ts1 = {};
-            ts1.broker = broker;
-            ts1.placeBracketOrder = false;
-            ts1.placeCoverOrder = false;
-            ts1.strategy = this.getName();
-            ts1.tradingSymbol = data.tradingSymbol;
-            ts1.isBuy = true; // long signal
-            ts1.trigger = price;
+        const ts1 = {};
+        ts1.broker = broker;
+        ts1.placeBracketOrder = false;
+        ts1.placeCoverOrder = false;
+        ts1.strategy = this.getName();
+        ts1.tradingSymbol = data.tradingSymbol;
+        ts1.isBuy = longPosition; // long signal
+        ts1.trigger = price;
+        if (ts1.isBuy) {
             ts1.stopLoss = roundToValidPrice(price - price * SL_PERCENTAGE / 100);
             ts1.target = roundToValidPrice(price + price * TARGET_PERCENTAGE / 100);
-
-            if (enableRiskManagement) {
-                ts1.quantity = calculateSharesWithRiskFactor(TOTAL_CAPITAL, ts1.trigger, ts1.stopLoss, RISK_PERCENTAGE_PER_TRADE);
-            } else {
-                ts1.quantity = parseInt((CAPITAL_PER_TRADE * MARGIN) / ts1.trigger);
-            }
-
-            ts1.considerOppositeTrade = false;
-            ts1.timestamp = lastCandle.timestamp;
-            ts1.tradeCutOffTime = this.strategyStopTimestamp;
-            ts1.isTrailingSL = false;
-            ts1.placeMarketOrderIfOrderNotFilled = false;
-            ts1.changeEntryPriceIfOrderNotFilled = true;
-            ts1.limitOrderBufferPercentage = 0.05;
-
-            const oldts = tm.getTradeSignalOfSame(ts1);
-            if (oldts) {
-                ts1.correlationID = oldts.correlationID;
-            } else if (ts2) {
-                ts1.correlationID = ts2.correlationID;
-            } else {
-                ts1.correlationID = uuid();
-            }
-            logger.info(`${this.name}: ${data.tradingSymbol} LONG trade signal generated for ${broker} @ ${ts1.trigger}`);
+        } else {
+            ts1.stopLoss = roundToValidPrice(price + price * SL_PERCENTAGE / 100);
+            ts1.target = roundToValidPrice(price - price * TARGET_PERCENTAGE / 100);
         }
 
-        if (!longPosition) {
-            ts2 = {};
-            ts2.broker = broker;
-            ts2.placeBracketOrder = false;
-            ts2.placeCoverOrder = false;
-            ts2.strategy = this.getName();
-            ts2.tradingSymbol = data.tradingSymbol;
-            ts2.isBuy = false; // short signal
-            ts2.trigger = price;
-            ts2.stopLoss = roundToValidPrice(price + price * SL_PERCENTAGE / 100);
-            ts2.target = roundToValidPrice(price - price * TARGET_PERCENTAGE / 100);
-
-            if (enableRiskManagement) {
-                ts2.quantity = calculateSharesWithRiskFactor(TOTAL_CAPITAL, ts2.trigger, ts2.stopLoss, RISK_PERCENTAGE_PER_TRADE);
-            } else {
-                ts2.quantity = parseInt((CAPITAL_PER_TRADE * MARGIN) / ts2.trigger);
-            }
-
-            ts2.considerOppositeTrade = false;
-            ts2.timestamp = lastCandle.timestamp;
-            ts2.tradeCutOffTime = this.strategyStopTimestamp;
-            ts2.isTrailingSL = false;
-            ts2.placeMarketOrderIfOrderNotFilled = false;
-            ts2.changeEntryPriceIfOrderNotFilled = true;
-            ts2.limitOrderBufferPercentage = 0.05;
-
-            const oldts = tm.getTradeSignalOfSame(ts2);
-            if (oldts) {
-                ts2.correlationID = oldts.correlationID;
-            } else if (ts1) {
-                ts2.correlationID = ts1.correlationID;
-            } else {
-                ts2.correlationID = uuid();
-            }
-            logger.info(`${this.name} : ${data.tradingSymbol} SHORT trade signal generated for ${broker} @ ${ts2.trigger}`);
+        if (enableRiskManagement) {
+            ts1.quantity = calculateSharesWithRiskFactor(TOTAL_CAPITAL, ts1.trigger, ts1.stopLoss, RISK_PERCENTAGE_PER_TRADE);
+        } else {
+            ts1.quantity = parseInt((CAPITAL_PER_TRADE * MARGIN) / ts1.trigger);
         }
-        data.buyTradeSignal[broker] = ts1;
-        data.sellTradeSignal[broker] = ts2;
-        if (ts1) {
-            tm.addTradeSignal(ts1);
-            data.isTradeSignalGenerated = true;
+
+        ts1.considerOppositeTrade = false;
+        ts1.timestamp = lastCandle.timestamp;
+        ts1.tradeCutOffTime = this.strategyStopTimestamp;
+        ts1.isTrailingSL = false;
+        ts1.placeMarketOrderIfOrderNotFilled = false;
+        ts1.changeEntryPriceIfOrderNotFilled = true;
+        ts1.limitOrderBufferPercentage = 0.05;
+
+        const oldts = tm.getTradeSignalOfSame(ts1);
+        if (oldts) {
+            ts1.correlationID = oldts.correlationID;
+        } else {
+            ts1.correlationID = uuid();
         }
-        if (ts2) {
-            tm.addTradeSignal(ts2);
-            data.isTradeSignalGenerated = true;
-        }
+
+        logger.info(`${this.name}: ${data.tradingSymbol} ${longPosition ? "LONG" : "SHORT"} trade signal generated for ${broker} @ ${ts1.trigger}`);
+        const existingTradeSignal = data[signalType][broker];
+        data[signalType][broker] = ts1;
+        if (existingTradeSignal)
+            tm.disableTradeSignal(existingTradeSignal);
+        tm.addTradeSignal(ts1);
+        data.isTradeSignalGenerated = true;
     }
 }
 

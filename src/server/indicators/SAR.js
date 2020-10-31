@@ -14,7 +14,7 @@ class SAR {
         const resistance = candles[i]['high'] > candles[i - 1]['high'] && candles[i]['high'] > candles[i + 1]['high'] && candles[i + 1]['high'] > candles[i + 2]['high'] && candles[i - 1]['high'] > candles[i - 2]['high'];
         return resistance;
     }
-    calculate(candles, neglible = .005) {
+    calculate(candles, neglible = .006) {
         const levels = [];
         for (let i = 2; i < candles.length - 2; i++) {
             if (this.isSupport(candles, i)) {

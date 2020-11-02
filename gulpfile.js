@@ -39,7 +39,7 @@ gulp.task("deploy-client", ["bundle-client"], function () {
 });
 
 gulp.task("deploy-server-config", [], function () {
-  return gulp.src(["src/config/config.json", "src/config/users.json", "src/config/strategies.json"])
+  return gulp.src(["src/config/*.json"])
     .pipe(gulp.dest("dist/config"));
 });
 

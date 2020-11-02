@@ -2,7 +2,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 
-const APP_STORAGE_PATH = '/home/gokul/Projects/sdoosa-algo-trade-app/src';
+const APP_STORAGE_PATH = path.resolve(__dirname, '..');
 let config = null, users = null, strategies = null, holidays = null;
 
 export const getAppStoragePath = () => {
@@ -46,7 +46,7 @@ export const getStrategies = () => {
   if (strategies) {
     return strategies;
   }
-  
+
   const strategiesJsonFilePath = [APP_STORAGE_PATH, 'config', 'strategies.json'].join(path.sep);
   try {
     strategies = fs.readJsonSync(strategiesJsonFilePath);

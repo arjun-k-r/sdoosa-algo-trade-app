@@ -4,11 +4,10 @@
     "enableSSL": false,
     "sslPort": 8443
   },
-  "sandboxTesting" : true,
+  "sandboxTesting": true,
   "supportedBrokers": [
     "zerodha"
   ],
-
   "preferredBrokerForTicker": "zerodha",
   "preferredBrokerForHistoryAPIs": "zerodha",
   "brokers": {

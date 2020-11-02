@@ -38,7 +38,6 @@ class BaseStrategy {
         this.strategyStartTime = parseTimestamp(this.strategy.startTime);
       if (this.strategy.stragyStopTime)
         this.stragyStopTime = parseTimestamp(this.strategy.stopTime);
-      console.log(this.strategyStartTime);
       this.stocks = _.get(this.strategy, 'stocks', []);
       this.candlesInterval = _.get(this.strategy, 'candlesInterval', 5);
       this.traceCandlesInterval = _.get(this.strategy, 'traceCandlesInterval', 5);

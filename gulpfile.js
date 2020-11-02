@@ -60,7 +60,7 @@ gulp.task("deploy", ["deploy-client", "deploy-server"], function () {
 });
 
 gulp.task("watch", [], function () {
-  return gulp.watch(["src/server/**/*.js"], function (event) {
+  return gulp.watch(["src/server/**/*.js", "src/config/*.json"], function (event) {
     console.info("File changed: ", event.path);
     gulp.run("deploy-server");
   });

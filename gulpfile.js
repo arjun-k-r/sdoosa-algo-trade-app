@@ -66,7 +66,7 @@ gulp.task("watch", [], function () {
   });
 });
 
-gulp.task("server", ["watch"], function () {
+gulp.task("server", ["deploy", "watch"], function () {
 
   var stream = nodemon({
     script: "dist/server/index.js",

@@ -999,6 +999,8 @@ class TradeManager {
     const oppTradeSignal = this.getOppositeTradeSignal(tradeSignal);
     if (oppTradeSignal && !oppTradeSignal.considerOppositeTrade && oppTradeSignal.isTriggered) {
       // disable this signal as the opposite trade already triggered
+      logger.info(`TradeManager:disable opp signal`);
+
       this.disableTradeSignal(tradeSignal);
       this.tradeSignals.push(tradeSignal);
       this.saveTradeSignalsToFile(true);

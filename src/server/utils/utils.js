@@ -84,8 +84,20 @@ export const formatDateToDDMMYYYY = (d) => {
   return dateStr;
 };
 
+export const addIndianTimeZoneOffset = (targetTime) => {
+  var tzDifference = 5.5;
+  //convert the offset to milliseconds, add to targetTime, and make a new Date
+  return new Date(targetTime.getTime() + tzDifference * 60 * 60 * 1000);
+};
+
+
 export const parseTimestamp = (timestampStr) => {
-  return new Date(Date.parse(timestampStr));
+  const time = timestampStr.split(":");
+  const newDate = new Date();
+  newDate.setHours(time[0]);
+  newDate.setMinutes(time[1]);
+  newDate.setSeconds(time[2]);
+  return newDate;
 };
 
 export const getMarketStartTime = (date) => {
@@ -110,7 +122,6 @@ export const getMarketEndTime = (date) => {
   date.setMinutes(30);
   date.setSeconds(0);
   date.setMilliseconds(0);
-
   return date;
 };
 
@@ -125,7 +136,7 @@ export const getIntradaySquareOffTime = (date) => {
   squareOffTime.setSeconds(0);
   squareOffTime.setMilliseconds(0);
 
-  return squareOffTime;
+  return addIndianTimeZoneOffset(squareOffTime);
 };
 
 export const isHoliday = (date) => {

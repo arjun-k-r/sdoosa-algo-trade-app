@@ -34,10 +34,11 @@ class BaseStrategy {
 
       logger.info(`---- strategy ${this.name} details => ${JSON.stringify(this.strategy)} ----`);
       console.log(`---- strategy ${this.name} details => `, this.strategy);
-
-      this.strategyStartTime = parseTimestamp(this.strategy.startTime);
-      this.stragyStopTime = parseTimestamp(this.strategy.stopTime);
-
+      if (this.strategy.startTime)
+        this.strategyStartTime = parseTimestamp(this.strategy.startTime);
+      if (this.strategy.stragyStopTime)
+        this.stragyStopTime = parseTimestamp(this.strategy.stopTime);
+      console.log(this.strategyStartTime);
       this.stocks = _.get(this.strategy, 'stocks', []);
       this.candlesInterval = _.get(this.strategy, 'candlesInterval', 5);
       this.traceCandlesInterval = _.get(this.strategy, 'traceCandlesInterval', 5);
@@ -264,6 +265,8 @@ class BaseStrategy {
             // for running in non market days
             if (!data.traceCandles)
               data.traceCandles = data.traceCandlesPrevDays;
+
+            console.log(from, to);
 
             HistoryAPIs.fetchHistory(tradingSymbol, this.traceCandlesInterval, from, to).then(candles => {
 

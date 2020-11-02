@@ -5,6 +5,7 @@
 import _ from 'lodash';
 import Zerodha from './Zerodha.js';
 import Instruments from './Instruments.js';
+import { addIndianTimeZoneOffset } from "../../utils/utils.js";
 
 const zerodhaCandleIntervalMappings = [
   {
@@ -51,14 +52,14 @@ class ZerodhaHistoryAPIs {
       intervalStr = getZerodhaCandleIntervalString(interval);
     }
 
-    return this.kiteConnect.getHistoricalData(token, intervalStr, from, to).then(candles => {
+    return this.kiteConnect.getHistoricalData(token, intervalStr, addIndianTimeZoneOffset(from), addIndianTimeZoneOffset(to)).then(candles => {
       _.each(candles, candle => {
         candle.timestamp = candle.date;
       });
       return candles;
     });
   }
-  
+
 }
 
 module.exports = new ZerodhaHistoryAPIs(); // singleton class

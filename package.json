@@ -4,7 +4,8 @@
   "description": "Algorithm based fully automated trading application with multiple broker support",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --fix src/server/**/*.js"
   },
   "author": "Sreenivas Doosa",
   "license": "ISC",

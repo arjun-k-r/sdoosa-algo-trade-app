@@ -2,7 +2,7 @@
   Author: Sreenivas Doosa
 */
 
-import { getAppStoragePath }  from './config.js';
+import { getAppStoragePath } from './config.js';
 import fs from 'fs-extra';
 
 const appStoragePath = getAppStoragePath();

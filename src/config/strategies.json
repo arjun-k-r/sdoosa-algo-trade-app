@@ -1,8 +1,10 @@
-[      
+[
   {
     "name": "SAR",
     "enabled": true,
-    "brokers": ["zerodha"],
+    "brokers": [
+      "zerodha"
+    ],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
     "candlesInterval": 5,
@@ -21,21 +23,23 @@
     "slPercentage": 0.2,
     "targetPercentage": 0.6,
     "stocks": [
-      "HCLTECH",      
-      "ICICIPRULI",      
+      "EXIDEIND",
+      "VOLTAS",
+      "INDUSINDBK",
+      "TATACONSUM",
       "BHARATFORG",
-      "PVR",      
-      "TVSMOTOR",       
-      "ADANIPORTS",
-      "WIPRO",       
-      "AMBUJACEM",       
-      "TATACONSUM"
+      "PVR",
+      "RELIANCE",
+      "AXISBANK",
+      "ICICIBANK"
     ]
   },
   {
     "name": "VWAP",
     "enabled": false,
-    "brokers": ["zerodha"],
+    "brokers": [
+      "zerodha"
+    ],
     "startTime": "09:30:00",
     "stopTime": "15:01:00",
     "candlesInterval": 5,
@@ -53,7 +57,17 @@
     "trailSL": false,
     "slPercentage": 0.6,
     "targetPercentage": 1.4,
-    "stocks": ["WIPRO", "SBILIFE", "AMBUJACEM", "DABUR", "TATACONSUM", "JINDALSTEL", "TATACHEM", "CIPLA", "HAVELLS"]
+    "stocks": [
+      "WIPRO",
+      "SBILIFE",
+      "AMBUJACEM",
+      "DABUR",
+      "TATACONSUM",
+      "JINDALSTEL",
+      "TATACHEM",
+      "CIPLA",
+      "HAVELLS"
+    ]
   },
   {
     "name": "HolyGrail",

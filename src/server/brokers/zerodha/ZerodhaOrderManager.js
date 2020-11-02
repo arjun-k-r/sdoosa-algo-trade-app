@@ -18,7 +18,7 @@ class ZerodhaOrderManager {
       transaction_type: orderDetails.isBuy ? 'BUY' : 'SELL',
       quantity: parseInt(orderDetails.quantity),
       product: product,
-      order_type: orderDetails.isMarketOrder ? 'MARKET' : 'NRML',
+      order_type: orderDetails.isMarketOrder ? 'SL-M' : 'SL',
       validity: product === 'MIS' ? 'DAY' : 'IOC',
       price: parseFloat(orderDetails.price)
     };

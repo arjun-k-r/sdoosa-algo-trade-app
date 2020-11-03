@@ -11,7 +11,7 @@
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
-      "totalCapital": 1000,
+      "totalCapital": 10000,
       "riskPercentagePerTrade": 1.0,
       "maxTrades": 4
     },
@@ -23,15 +23,14 @@
     "slPercentage": 0.2,
     "targetPercentage": 0.6,
     "stocks": [
-      "EXIDEIND",
-      "VOLTAS",
-      "INDUSINDBK",
-      "TATACONSUM",
+      "POWERGRID",
+      "GLENMARK",
+      "TATAMOTORS",
+      "M&M",
       "BHARATFORG",
-      "PVR",
-      "RELIANCE",
-      "AXISBANK",
-      "ICICIBANK"
+      "TATACONSUM",
+      "INDUSINDBK",
+      "VOLTAS"
     ]
   },
   {

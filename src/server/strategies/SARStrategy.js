@@ -50,7 +50,7 @@ class SARStrategy extends BaseStrategy {
 
   findSupportAndResistance() {
     const brokers = _.get(this.strategy, 'brokers', []);
-    const NEAR = _.get(this.strategy, 'slPercentage', .1);
+    const NEAR = _.get(this.strategy, 'targetPercentage', .1);
 
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);

@@ -265,8 +265,6 @@ class BaseStrategy {
             if (!data.traceCandles)
               data.traceCandles = data.traceCandlesPrevDays;
 
-            console.log(from, to);
-
             HistoryAPIs.fetchHistory(tradingSymbol, this.traceCandlesInterval, from, to).then(candles => {
 
               data.lastTraceCandlesFetchTime = new Date();

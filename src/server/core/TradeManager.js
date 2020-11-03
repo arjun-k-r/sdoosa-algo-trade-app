@@ -33,6 +33,7 @@ class TradeManager {
 
     this.tradeSignals = [];
     this.trades = [];
+    this.failedTrades = [];
 
     const tradesDir = [getAppStoragePath(), 'data', 'trades'].join(path.sep);
     // create dir if not exist
@@ -40,10 +41,12 @@ class TradeManager {
 
     const todayDateStr = formatDateToString(new Date());
     this.tradesFilePath = [tradesDir, `trades_${todayDateStr}.json`].join(path.sep);
+    this.failedTradesFilePath = [tradesDir, `failed_trades_${todayDateStr}.json`].join(path.sep);
     this.tradeSignalsFilePath = [tradesDir, `trade_signals_${todayDateStr}.json`].join(path.sep);
 
     this.loadTradeSignalsFromFile();
     this.loadTradesFromFile();
+    this.loadFailedTradesFromFile();
   }
 
   start() {
@@ -59,6 +62,7 @@ class TradeManager {
 
     this.loadTradeSignalsFromFile();
     this.loadTradesFromFile();
+    this.loadFailedTradesFromFile();
 
     this.run();
   }
@@ -294,6 +298,15 @@ class TradeManager {
     logger.info(`TradeManaer: ${this.tradeSignals ? this.tradeSignals.length : 0} tradeSignals loaded from file ${this.tradeSignalsFilePath}`);
   }
 
+  loadFailedTradesFromFile() {
+    try {
+      this.failedTrades = fs.readJsonSync(this.failedTradesFilePath);
+    } catch (err) {
+      logger.error(`TradeManager: loadTradesFailedFromFile. Error: ${JSON.stringify(err)}`);
+    }
+    logger.info(`TradeManaer: ${this.failedTrades ? this.failedTrades.length : 0} failed trades loaded from file ${this.failedTradesFilePath}`);
+  }
+
   getAllActiveStocks() {
     const allSymbols = [];
     _.each(this.tickerSymbols, symbol => allSymbols.push(symbol));
@@ -501,6 +514,8 @@ class TradeManager {
       return trade;
 
     }).catch(err => {
+      this.failedTrades.push(tradeSignal);
+      this.saveFailedTradesToFile();
       logger.error(`${tradeSignal.tradingSymbol} => Error while placing the order for trade signal ${JSON.stringify(tradeSignal)}. Error: ${JSON.stringify(err)}`);
       throw err;
     });
@@ -1114,6 +1129,16 @@ class TradeManager {
     }).catch(err => {
       logger.error(`error in saving trades to file ${this.tradesFilePath}. ${JSON.stringify(err)}`);
       this.lastTradesSaveTimestamp = new Date();
+    });
+  }
+
+  saveFailedTradesToFile() {
+    fs.writeJson(this.failedTradesFilePath, this.failedTrades, {
+      spaces: 2
+    }).then(() => {
+      logger.debug(`failed trades ${this.trades.length} successfully writen to ${this.failedTradesFilePath}`);
+    }).catch(err => {
+      logger.error(`error in saving failed trades to file ${this.failedTradesFilePath}. ${JSON.stringify(err)}`);
     });
   }
 

@@ -463,7 +463,7 @@ export function formatToInput(candles) {
     low: [],
     volume: []
   };
-  for (i = 0; i < candles.length; i++) {
+  for (let i = 0; i < candles.length; i++) {
     Object.keys(result).forEach(key => {
       result[key].push(candles[i][key]);
     });

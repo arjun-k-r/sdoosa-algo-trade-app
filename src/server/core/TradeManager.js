@@ -383,6 +383,7 @@ class TradeManager {
       const strategyInstance = getStrategyInstance(tradeSignalBuy.strategy);
       if (strategyInstance &&
         strategyInstance.shouldPlaceTrade(tradeSignalBuy, liveQuote)) {
+        logger.info(`Confirmed Should`);
 
         tradeSignalBuy.orderPlacementInProgress = true;
 

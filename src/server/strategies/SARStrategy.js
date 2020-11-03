@@ -23,6 +23,8 @@ import { getConfig } from '../config.js';
 
 const BollingerBands = require('technicalindicators').BollingerBands;
 const VWAP = require('technicalindicators').VWAP;
+const RSI = require('technicalindicators').RSI;
+
 const config = getConfig();
 
 class SARStrategy extends BaseStrategy {
@@ -61,26 +63,28 @@ class SARStrategy extends BaseStrategy {
         data.sarpoints = SAR.calculate(data.traceCandles, NEAR);
 
         const lastCandle = data.traceCandles[data.traceCandles.length - 1];
-        const isBuy = lastCandle.open < lastCandle.close;
 
         console.log(data.tradingSymbol, data.sarpoints);
 
-        _.each(data.sarpoints, sarpoint => {
-          const [s, r] = sarpoint;
-          if (isBuy) {
-            if (isNear(r, lastCandle.close, NEAR, true)) {
+        if (data.candles && data.candles.length) {
+          const upwardTrend = this.confirmUptrendWithVWAP(data.candles);
+          _.each(data.sarpoints, sarpoint => {
+            const [s, r] = sarpoint;
+
+            if (upwardTrend && isNear(r, lastCandle.close, NEAR, true)) {
               _.each(brokers, broker => {
                 return this.generateTradeSignals(data, true, r, broker);
               });
             }
-          } else {
-            if (isNear(s, lastCandle.close, NEAR, false)) {
+
+            if (!upwardTrend && isNear(s, lastCandle.close, NEAR, false)) {
               _.each(brokers, broker => {
                 return this.generateTradeSignals(data, false, s, broker);
               });
             }
-          }
-        });
+          });
+        }
+
       }
     });
   }
@@ -93,7 +97,7 @@ class SARStrategy extends BaseStrategy {
 
     logger.info(`Checking near ${this.name}: ${data.tradingSymbol} ${tradeSignal.isBuy ? "LONG" : "SHORT"} @ ${tradeSignal.trigger}`);
 
-    if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR, tradeSignal.isBuy)) {
+    if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       return false;
     }
 
@@ -103,11 +107,23 @@ class SARStrategy extends BaseStrategy {
       return false;
     }
 
-    logger.info(`VWAP`);
+    // logger.info(`Checking VWAP`);
 
-    if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
+    // // if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
+    // //   logger.info(`failed in  VWAP`);
+
+    // //   return false;
+    // // }
+
+    logger.info(`Checking RSI`);
+
+    if (!this.confirmWithRSI(data, tradeSignal, liveQuote)) {
+      logger.info(`failed in RSI`);
+
       return false;
     }
+    logger.info(`Confirmed`);
+
     return true;
   };
 
@@ -122,26 +138,37 @@ class SARStrategy extends BaseStrategy {
     const lastCandle = traceCandles[traceCandles.length - 1];
     const bollingerBands = BollingerBands.calculate(input);
     const lastBollingerBand = bollingerBands[bollingerBands.length - 1];
-    if (tradeSignal.isBuy && lastCandle.close > lastBollingerBand.middle > lastCandle.open) {
-      return true;
+    const upwardCandle = lastCandle.open < lastCandle.close;
+    if (tradeSignal.isBuy && upwardCandle) {
+      if (lastCandle.close > lastBollingerBand.middle && lastBollingerBand.middle > lastCandle.open) {
+        return liveQuote.cmp > lastCandle.close;
+      }
     }
-    if (!tradeSignal.isBuy && lastCandle.close < lastBollingerBand.middle < lastCandle.open) {
-      return true;
+    if (!tradeSignal.isBuy && !upwardCandle) {
+      if (lastCandle.close < lastBollingerBand.middle && lastBollingerBand.middle < lastCandle.open) {
+        return liveQuote.cmp < lastCandle.close;
+      }
     }
     return false;
   };
 
-  confirmWithVWAP(data, tradeSignal, liveQuote) {
-    const traceCandles = data.traceCandles;
+  confirmUptrendWithVWAP(traceCandles) {
     const input = formatToInput(traceCandles);
     const output = VWAP.calculate(input);
     const lastOutput = output[output.length - 1];
     const lastCandle = traceCandles[traceCandles.length - 1];
-    if (tradeSignal.isBuy)
-      return lastOutput < lastCandle.close;
-    if (!tradeSignal.isBuy)
-      return lastOutput > lastCandle.close;
-    return false;
+    return lastOutput < lastCandle.close;
+  }
+
+  confirmWithRSI(data, tradeSignal, liveQuote) {
+    const traceCandles = data.traceCandles;
+    const inputRSI = {
+      period: 14
+    };
+    inputRSI.values = traceCandles.map(c => c.volume);
+    const output = RSI.calculate(inputRSI);
+    const last = output[output.length - 1];
+    return tradeSignal.isBuy ? last < 80 : last > 20;
   }
 
   shouldPlaceTrade(tradeSignal, liveQuote) {
@@ -246,10 +273,7 @@ class SARStrategy extends BaseStrategy {
     }
 
     logger.info(`${this.name}: ${data.tradingSymbol} ${longPosition ? "LONG" : "SHORT"} trade signal generated for ${broker} @ ${ts1.trigger}`);
-    // const existingTradeSignal = data[signalType][broker];
     data[signalType][broker] = ts1;
-    // if (existingTradeSignal)
-    //   tm.disableTradeSignal(existingTradeSignal);
     tm.addTradeSignal(ts1);
     data.isTradeSignalGenerated = true;
   }

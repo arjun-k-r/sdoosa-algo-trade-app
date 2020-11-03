@@ -18,11 +18,10 @@ class ZerodhaOrderManager {
       transaction_type: orderDetails.isBuy ? 'BUY' : 'SELL',
       quantity: parseInt(orderDetails.quantity),
       product: product,
-      order_type: orderDetails.isMarketOrder ? 'SL-M' : 'SL',
+      order_type: orderDetails.isMarketOrder ? 'MARKET' : 'LIMIT',
       validity: product === 'MIS' ? 'DAY' : 'IOC',
       price: parseFloat(orderDetails.price)
     };
-    
     return this.kiteConnect.placeOrder(variety, params);
   }
 
@@ -61,7 +60,7 @@ class ZerodhaOrderManager {
       price: parseFloat(orderDetails.price),
       trigger_price: parseFloat(orderDetails.triggerPrice)
     };
-    
+
     return this.kiteConnect.placeOrder(variety, params);
   }
 
@@ -93,7 +92,7 @@ class ZerodhaOrderManager {
       if (!orders || orders.length === 0) {
         return null;
       }
-      
+
       // last history is the latest status of the order
       return orders[orders.length - 1];
     });

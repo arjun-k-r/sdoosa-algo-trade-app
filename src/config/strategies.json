@@ -11,9 +11,9 @@
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
-      "totalCapital": 10000,
+      "totalCapital": 1000,
       "riskPercentagePerTrade": 1.0,
-      "maxTrades": 4
+      "maxTrades": 10
     },
     "withoutRiskManagement": {
       "capitalPerTrade": 1000,
@@ -23,14 +23,26 @@
     "slPercentage": 0.2,
     "targetPercentage": 0.6,
     "stocks": [
-      "POWERGRID",
-      "GLENMARK",
+      "NTPC",
+      "CADILAHC",
+      "RAMCOCEM",
+      "ICICIBANK",
+      "LT",
       "TATAMOTORS",
-      "M&M",
-      "BHARATFORG",
-      "TATACONSUM",
-      "INDUSINDBK",
-      "VOLTAS"
+      "ADANIPORTS",
+      "BANDHANBNK",
+      "ESCORTS",
+      "GODREJPROP",
+      "ZEEL",
+      "TATASTEEL",
+      "ICICIGI",
+      "NAUKRI",
+      "NMDC",
+      "MARUTI",
+      "SAIL",
+      "RBLBANK",
+      "INFRATEL",
+      "HINDALCO"
     ]
   },
   {

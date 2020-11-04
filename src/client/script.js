@@ -38,7 +38,7 @@
 })()
     .then((results) => {
         // console.clear();
-        console.log(JSON.stringify(results.slice(0, 20).map(result => result.metadata.symbol), null, 4));
+        console.log(JSON.stringify(results.slice(0, 30).map(result => result.metadata.symbol), null, 4));
 
     })
     .catch(console.error);

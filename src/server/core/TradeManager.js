@@ -965,6 +965,7 @@ class TradeManager {
       ts1.isBuy === ts2.isBuy &&
       ts1.trigger === ts2.trigger &&
       ts1.stopLoss === ts2.stopLoss &&
+      ts1.disabled === ts2.disabled &&
       ts1.target === ts2.target; // there can be multiple sub trades for same trade with different stoploss & target values
   }
 

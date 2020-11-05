@@ -1,34 +1,60 @@
 /*
   Author: Gokul T
 */
-import {
-  createClustors
-} from '../utils/utils.js';
+
+import _ from "lodash";
+import { createClustors, range } from "../utils/utils";
 
 class SAR {
+  constructor(candles) {
+    this.candles = candles;
+    this.s = this.avgCandleSize();
+    this.levels = [];
+  }
   isSupport(candles, i) {
     const support = candles[i].low < candles[i - 1].low && candles[i].low < candles[i + 1].low && candles[i + 1].low < candles[i + 2].low && candles[i - 1].low < candles[i - 2].low;
-    return support;
+    if (support)
+      return Math.min(...range(candles.map(c => c.low), i, 6)) === candles[i].low;
+    return false;
   }
   isResistance(candles, i) {
     const resistance = candles[i].high > candles[i - 1].high && candles[i].high > candles[i + 1].high && candles[i + 1].high > candles[i + 2].high && candles[i - 1].high > candles[i - 2].high;
-    return resistance;
+    if (resistance)
+      return Math.max(...range(candles.map(c => c.high), i, 6)) === candles[i].high;
+    return false;
   }
-  calculate(candles, neglible = .006) {
+  avgCandleSize(candles = this.candles) {
     const levels = [];
-    for (let i = 2; i < candles.length - 2; i++) {
+    for (let i = 0; i < candles.length - 1; i++) {
+      levels.push(candles[i].high - candles[i].low);
+    }
+    return _.mean(levels);
+  }
+  getAvgCandleSize() {
+    return this.s;
+  }
+  isFarFromLevel(l) {
+    const s = this.s;
+    return this.levels.filter(x => Math.abs(l - x) < s).length === 0;
+  }
+  calculate() {
+    const candles = this.candles;
+    for (let i = 2; i < candles.length - 3; i++) {
       if (this.isSupport(candles, i)) {
-        levels.push(candles[i].low);
+        const l = candles[i].low;
+        // if (this.isFarFromLevel(l)) {
+        this.levels.push(l);
+        // }
       }
       if (this.isResistance(candles, i)) {
-        levels.push(candles[i].high);
+        const l = candles[i].high;
+        // if (this.isFarFromLevel(l)) {
+        this.levels.push(l);
+        // }
       }
     }
-    const clusters = createClustors(levels, neglible);
-    return clusters.map(cluster => {
-      return [cluster[0], cluster[cluster.length - 1]];
-    });
+    return createClustors(this.levels, this.s).map(c => [c[0], c[c.length - 1]]);
   }
 }
 
-module.exports = new SAR();
+module.exports = SAR;

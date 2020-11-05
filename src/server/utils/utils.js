@@ -394,17 +394,14 @@ export function average(nums) {
   return nums.reduce((a, b) => (a + b)) / nums.length;
 }
 
-export function createClustors(points, allowedChangePercentage) {
-  const allowedChange = allowedChangePercentage / 100;
+export function createClustors(points, negligible) {
   const breakpoints = points.sort((a, b) => a - b);
   const breakpointClusters = [];
   let lastCluster = [];
   _.each(breakpoints, (b, i) => {
     if (lastCluster.length) {
       const lastValue = lastCluster[lastCluster.length - 1];
-      const change = b - lastValue;
-      const negligible = b * allowedChange;
-      if (change < negligible) {
+      if (Math.abs(b - lastValue) < negligible) {
         lastCluster.push(b);
       } else {
         if (lastCluster.length)

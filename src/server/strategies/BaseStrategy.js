@@ -67,6 +67,11 @@ class BaseStrategy {
     return this.traceCandlesInterval;
   }
 
+  getSignalDetails(tradeSignal) {
+    if (tradeSignal)
+      return `${tradeSignal.tradingSymbol} ${tradeSignal.isBuy ? "buy" : "sell"} @ ${tradeSignal.trigger}`;
+  }
+
   start() {
     if (!this.isEnabled()) {
       logger.warn(`${this.name}: Not running strategy as it is not enabled.`);

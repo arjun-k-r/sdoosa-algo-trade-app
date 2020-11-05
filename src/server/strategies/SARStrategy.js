@@ -25,6 +25,8 @@ const BollingerBands = require('technicalindicators').BollingerBands;
 const VWAP = require('technicalindicators').VWAP;
 const RSI = require('technicalindicators').RSI;
 const Stochastic = require('technicalindicators').Stochastic;
+const CrossUp = require('technicalindicators').CrossUp;
+const CrossDown = require('technicalindicators').CrossDown;
 
 const config = getConfig();
 
@@ -55,29 +57,37 @@ class SARStrategy extends BaseStrategy {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
       if (data && data.traceCandles && data.traceCandles.length > 0) {
-        if (data && data.candles && data.candles.length) {
-          const uptrend = this.confirmUptrendWithVWAP(data.candles);
-          const result = this.checkForMomentumChangeWithStochastic(data.traceCandles);
-          if (result.trendReversalHappened && result.uptrend === uptrend) {
-            const bp = this.findBreakPoint(data) || data.candles[data.candles.length - 1].close;
-            this.generateTradeSignals(data, false, bp);
+        const candles = data.candles || data.traceCandles;
+        const uptrend = this.confirmUptrendWithVWAP(candles);
+        const result = this.checkForMomentumChangeWithStochastic(data.traceCandles);
+        console.log(data.tradingSymbol, uptrend ? "up" : "down", result);
+        if (result.strongCrossOver && result.uptrend === uptrend) {
+          const bp = this.findBreakPoint(data);
+          const lastCandle = candles[candles.length - 1];
+          if (bp) {
+            this.generateTradeSignals(data, uptrend, bp);
+          } else if (uptrend) {
+            if (Math.max(candles.map(c => c.high) === lastCandle.high)) {
+              this.generateTradeSignals(data, uptrend, lastCandle.high);
+            }
+          } else {
+            if (Math.min(candles.map(c => c.low) === lastCandle.low)) {
+              this.generateTradeSignals(data, uptrend, lastCandle.low);
+            }
           }
         }
       }
     });
   }
   findBreakPoint(data, uptrend) {
-    const NEAR = .4;
     const lastCandle = data.traceCandles[data.traceCandles.length - 1];
-    // check first candle close with previous day close
-    // data.sarpoints = SAR.find(data.traceCandles);
-    const sarpoints = SAR.calculate(data.traceCandles, NEAR);
-    console.log(data.tradingSymbol, sarpoints);
+    const sar = new SAR(data.traceCandles);
+    const sarpoints = sar.calculate();
     const filteredPoints = sarpoints.map((sarpoint) => {
       const [s, r] = sarpoint;
       return uptrend ? r : s;
     }).filter(sarpoint => {
-      if (isNear(sarpoint, lastCandle.close, NEAR, uptrend)) {
+      if (isNear(sarpoint, lastCandle.close, .4, uptrend)) {
         return true;
       }
       return false;
@@ -95,21 +105,27 @@ class SARStrategy extends BaseStrategy {
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       return false;
     }
+
+    console.log(tradeSignal.tradingSymbol);
+
     // // if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
     // //   return false;
     // // }
+
     console.log("check schoc");
 
     const result = this.checkForMomentumChangeWithStochastic(data.traceCandles);
-    if (tradeSignal.isBuy !== result.uptrend) {
+    if (!result.strongCrossOver || tradeSignal.isBuy !== result.uptrend) {
+      const tm = TradeManager.getInstance();
+      tm.disableTradeSignal(tradeSignal);
+      logger.info(`Momentum lost, disabled ${this.getSignalDetails(tradeSignal)}`);
       return false;
     }
 
-    console.log(tradeSignal.tradingSymbol, "check bollinger");
-
-    if (!this.confirmWithBollingerBands(data, tradeSignal, liveQuote)) {
-      return false;
-    }
+    // console.log("check bollinger");
+    // if (!this.confirmWithBollingerBands(data, tradeSignal, liveQuote)) {
+    //   return false;
+    // }
 
     console.log("check rsi");
 
@@ -121,7 +137,7 @@ class SARStrategy extends BaseStrategy {
   };
 
   checkForMomentumChangeWithStochastic(candles) {
-    let period = 14;
+    let period = 8;
     let signalPeriod = 3;
     const formattedInput = formatToInput(candles);
     let input = {
@@ -131,14 +147,24 @@ class SARStrategy extends BaseStrategy {
       period: period,
       signalPeriod: signalPeriod
     };
-    const output = Stochastic.calculate(input);
-    const last = output[output.length - 1];
-    const last3 = output.slice(output.length - signalPeriod);
+    const stochasticOutput = Stochastic.calculate(input);
+    const crossOverInput = stochasticOutput.reduce((acc, o) => {
+      acc.lineA.push(o.k);
+      acc.lineB.push(o.d);
+      return acc;
+    }, { lineA: [], lineB: [] });
+    const last = stochasticOutput[stochasticOutput.length - 1];
     const uptrend = last.k > last.d;
-    const downtrend = last3[0].k < last3[0].d;
+
+    const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
+    const crossOver = crossOvers.slice(Math.max(crossOvers.length - 2, 0)).includes(true);
+    const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 5, 0));
+
     return {
       uptrend,
-      trendReversalHappened: uptrend === downtrend
+      crossOver,
+      nCrossOvers,
+      strongCrossOver: uptrend ? last.d < 20 : last.d > 80 && crossOver && nCrossOvers.filter(c => c).length === 1
     };
   }
 
@@ -152,36 +178,21 @@ class SARStrategy extends BaseStrategy {
     };
 
     const bollingerBands = BollingerBands.calculate(input);
+    const crossOverInput = { lineA: [], lineB: [] };
 
+    for (let i = 0; i < bollingerBands.length; i++) {
+      crossOverInput.lineA.push(traceCandles[i].close);
+      crossOverInput.lineB.push(bollingerBands[i].middle);
+    }
+
+    const crossOvers = tradeSignal.isBuy ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
+    const crossOver = crossOvers.slice(Math.max(crossOvers.length - 3, 0)).includes(true);
+
+    if (!crossOver)
+      return false;
     const lastCandle = traceCandles[traceCandles.length - 1];
-    const lastBollingerBand = bollingerBands[bollingerBands.length - 1];
-    if (tradeSignal.isBuy !== lastCandle.close > lastBollingerBand.middle)
-      return false;
-    let crossed = false;
-    for (let i = bollingerBands.length - 1; i > bollingerBands.length - 4; i--) {
-      if (this.isBolingerMiddleCrossed(tradeSignal.isBuy, traceCandles[i], bollingerBands[i])) {
-        crossed = true;
-      }
-    }
-    if (!crossed)
-      return false;
-
-    return tradeSignal.isBuy ? liveQuote.cmp > lastCandle.close : liveQuote.cmp < lastCandle.close;
+    return tradeSignal.isBuy ? liveQuote.cmp >= lastCandle.close : liveQuote.cmp <= lastCandle.close;
   };
-
-  isBolingerMiddleCrossed(isBuy, lastCandle, lastBollingerBand) {
-    if (isBuy) {
-      if (lastCandle.close > lastBollingerBand.middle && lastBollingerBand.middle > lastCandle.open) {
-        return true;
-      }
-    }
-    else {
-      if (lastCandle.close < lastBollingerBand.middle && lastBollingerBand.middle < lastCandle.open) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   confirmUptrendWithVWAP(candles) {
     const input = formatToInput(candles);

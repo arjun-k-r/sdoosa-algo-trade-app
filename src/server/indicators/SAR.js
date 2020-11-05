@@ -10,6 +10,7 @@ class SAR {
     this.candles = candles;
     this.s = this.avgCandleSize();
     this.levels = [];
+    this.calculate();
   }
   isSupport(candles, i) {
     const support = candles[i].low < candles[i - 1].low && candles[i].low < candles[i + 1].low && candles[i + 1].low < candles[i + 2].low && candles[i - 1].low < candles[i - 2].low;
@@ -37,6 +38,10 @@ class SAR {
     const s = this.s;
     return this.levels.filter(x => Math.abs(l - x) < s).length === 0;
   }
+  mostNearLevel(l, up) {
+    const filtered = this.getLevels().filter(x => up ? x >= l : x <= l);
+    return filtered[up ? 0 : filtered.length - 1];
+  }
   calculate() {
     const candles = this.candles;
     for (let i = 2; i < candles.length - 3; i++) {
@@ -53,7 +58,14 @@ class SAR {
         // }
       }
     }
-    return createClustors(this.levels, this.s).map(c => [c[0], c[c.length - 1]]);
+    this.levels = this.levels.sort((a, b) => a - b);
+    return this.levels;
+  }
+  getLevels() {
+    return this.levels;
+  }
+  calculateClusters() {
+    return createClustors(this.getLevels(), this.s).map(c => [c[0], c[c.length - 1]]);
   }
 }
 

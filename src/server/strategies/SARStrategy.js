@@ -64,19 +64,9 @@ class SARStrategy extends BaseStrategy {
         console.log(data.tradingSymbol, uptrend ? "up" : "down", result);
         if (result.strongCrossOver && result.uptrend === uptrend) {
           const bp = this.findBreakPoint(data);
-          const lastCandle = candles[candles.length - 1];
+          const lastCandle = candles[candles.length - 1] || lastCandle.high;
           logger.info(`${tradingSymbol} got stochastic crossover confirmation bp :${bp}`);
-          if (bp) {
-            this.generateTradeSignals(data, uptrend, bp);
-          } else if (uptrend) {
-            if ((Math.max(...data.traceCandles.map(c => c.high)) === lastCandle.high)) {
-              this.generateTradeSignals(data, uptrend, lastCandle.high);
-            }
-          } else {
-            if ((Math.min(...data.traceCandles.map(c => c.low)) === lastCandle.low)) {
-              this.generateTradeSignals(data, uptrend, lastCandle.low);
-            }
-          }
+          this.generateTradeSignals(data, uptrend, bp || lastCandle.high);
         }
       }
     });
@@ -84,18 +74,17 @@ class SARStrategy extends BaseStrategy {
   findBreakPoint(data, uptrend) {
     const lastCandle = data.traceCandles[data.traceCandles.length - 1];
     const sar = new SAR(data.traceCandles);
-    const sarpoints = sar.calculate();
-    const filteredPoints = sarpoints.map((sarpoint) => {
-      const [s, r] = sarpoint;
-      return uptrend ? r : s;
-    }).filter(sarpoint => {
-      if (isNear(sarpoint, lastCandle.close, .4, uptrend)) {
-        return true;
-      }
-      return false;
-    });
-    const breakPoint = filteredPoints[uptrend ? (filteredPoints.length - 1) : 0];
-    return breakPoint;
+    return sar.mostNearLevel(lastCandle.close, uptrend);
+    // const sarpoints = sar.calculateClusters();
+    // return sarpoints.map((sarpoint) => {
+    //   const [s, r] = sarpoint;
+    //   return uptrend ? r : s;
+    // }).find(sarpoint => {
+    //   if (isNear(sarpoint, lastCandle.close, .4, uptrend)) {
+    //     return true;
+    //   }
+    //   return false;
+    // });
   }
   confirmTrade(tradeSignal, liveQuote) {
     const NEAR = 0.1;
@@ -157,10 +146,11 @@ class SARStrategy extends BaseStrategy {
     const uptrend = last.k > last.d;
 
     const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
-    const crossOver = crossOvers.slice(Math.max(crossOvers.length - 2, 0)).includes(true);
-    const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 5, 0));
+    const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
+    const crossOver = nCrossOvers.includes(true);
     const uniqueCrossOver = nCrossOvers.filter(c => c).length === 1;
     const rsiConfirmation = this.confirmWithRSI(candles, uptrend);
+
     return {
       nCrossOvers,
       uptrend,

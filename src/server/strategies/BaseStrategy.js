@@ -155,7 +155,8 @@ class BaseStrategy {
     this.fetchPrevDayData().then(() => {
       logger.info(`${this.name}: fetching prev day data done.`);
       processInLoop();
-    });
+    })
+      .catch(console.error);
   }
 
   process() {

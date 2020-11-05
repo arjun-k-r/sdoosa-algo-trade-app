@@ -50,28 +50,30 @@ class SARStrategy extends BaseStrategy {
         }
       }
       return this.findSupportAndResistance();
-    }).catch(logger.error);
+    })
+      .catch(console.error);
   }
 
   findSupportAndResistance() {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-      if (data && data.traceCandles && data.traceCandles.length > 0) {
+      if (data && data.traceCandles && data.traceCandles.length) {
         const candles = data.candles || data.traceCandles;
         const uptrend = this.confirmUptrendWithVWAP(candles);
-        const result = this.checkForMomentumChangeWithStochastic(data.traceCandles);
+        const result = this.checkForMomentumWithStochastic(data.traceCandles);
         console.log(data.tradingSymbol, uptrend ? "up" : "down", result);
         if (result.strongCrossOver && result.uptrend === uptrend) {
           const bp = this.findBreakPoint(data);
           const lastCandle = candles[candles.length - 1];
+          logger.info(`${tradingSymbol} got stochastic crossover confirmation bp :${bp}`);
           if (bp) {
             this.generateTradeSignals(data, uptrend, bp);
           } else if (uptrend) {
-            if (Math.max(candles.map(c => c.high) === lastCandle.high)) {
+            if ((Math.max(...data.traceCandles.map(c => c.high)) === lastCandle.high)) {
               this.generateTradeSignals(data, uptrend, lastCandle.high);
             }
           } else {
-            if (Math.min(candles.map(c => c.low) === lastCandle.low)) {
+            if ((Math.min(...data.traceCandles.map(c => c.low)) === lastCandle.low)) {
               this.generateTradeSignals(data, uptrend, lastCandle.low);
             }
           }
@@ -92,7 +94,7 @@ class SARStrategy extends BaseStrategy {
       }
       return false;
     });
-    const breakPoint = filteredPoints[uptrend ? filteredPoints.length - 1 : 0];
+    const breakPoint = filteredPoints[uptrend ? (filteredPoints.length - 1) : 0];
     return breakPoint;
   }
   confirmTrade(tradeSignal, liveQuote) {
@@ -100,8 +102,6 @@ class SARStrategy extends BaseStrategy {
     const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradeSignal.tradingSymbol);
     if (!data || !data.traceCandles)
       return false;
-
-
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       return false;
     }
@@ -111,14 +111,12 @@ class SARStrategy extends BaseStrategy {
     // // if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
     // //   return false;
     // // }
-
-    console.log("check schoc");
-
-    const result = this.checkForMomentumChangeWithStochastic(data.traceCandles);
+    const tm = TradeManager.getInstance();
+    console.log("Check Stochastic");
+    const result = this.checkForMomentumWithStochastic(data.traceCandles);
     if (!result.strongCrossOver || tradeSignal.isBuy !== result.uptrend) {
-      const tm = TradeManager.getInstance();
       tm.disableTradeSignal(tradeSignal);
-      logger.info(`Momentum lost, disabled ${this.getSignalDetails(tradeSignal)}`);
+      logger.info(`Momentum lost, disabling ${this.getSignalDetails(tradeSignal)}`);
       return false;
     }
 
@@ -127,16 +125,18 @@ class SARStrategy extends BaseStrategy {
     //   return false;
     // }
 
-    console.log("check rsi");
+    console.log("Check RSI");
 
-    if (!this.confirmWithRSI(data, tradeSignal, liveQuote)) {
+    if (!this.confirmWithRSI(data.traceCandles, tradeSignal.isBuy)) {
+      tm.disableTradeSignal(tradeSignal);
+      logger.info(`RSI confirmation lost, disabling ${this.getSignalDetails(tradeSignal)}`);
       return false;
     }
 
     return true;
   };
 
-  checkForMomentumChangeWithStochastic(candles) {
+  checkForMomentumWithStochastic(candles) {
     let period = 8;
     let signalPeriod = 3;
     const formattedInput = formatToInput(candles);
@@ -159,12 +159,15 @@ class SARStrategy extends BaseStrategy {
     const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
     const crossOver = crossOvers.slice(Math.max(crossOvers.length - 2, 0)).includes(true);
     const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 5, 0));
-
+    const uniqueCrossOver = nCrossOvers.filter(c => c).length === 1;
+    const rsiConfirmation = this.confirmWithRSI(candles, uptrend);
     return {
+      nCrossOvers,
       uptrend,
       crossOver,
-      nCrossOvers,
-      strongCrossOver: uptrend ? last.d < 20 : last.d > 80 && crossOver && nCrossOvers.filter(c => c).length === 1
+      uniqueCrossOver,
+      rsiConfirmation,
+      strongCrossOver: uptrend ? last.d < 20 : last.d > 80 && crossOver && uniqueCrossOver && rsiConfirmation
     };
   }
 
@@ -202,15 +205,14 @@ class SARStrategy extends BaseStrategy {
     return lastOutput < lastCandle.close;
   }
 
-  confirmWithRSI(data, tradeSignal, liveQuote) {
-    const traceCandles = data.traceCandles;
+  confirmWithRSI(candles, isBuy) {
     const inputRSI = {
-      period: 14
+      period: 8
     };
-    inputRSI.values = traceCandles.map(c => c.volume);
+    inputRSI.values = candles.map(c => c.volume);
     const output = RSI.calculate(inputRSI);
     const last = output[output.length - 1];
-    return tradeSignal.isBuy ? last < 80 : last > 20;
+    return isBuy ? last < 80 : last > 20;
   }
 
   shouldPlaceTrade(tradeSignal, liveQuote) {

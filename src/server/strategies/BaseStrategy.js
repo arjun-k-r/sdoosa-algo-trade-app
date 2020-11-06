@@ -13,7 +13,7 @@ import {
   getMarketEndTime,
   getIntradaySquareOffTime,
   areCandlesUptoDate,
-  formatTimestampToString,
+  // formatTimestampToString,
   removeLatestUnclosedCandle
 } from '../utils/utils.js';
 import logger from '../logger/logger.js';
@@ -214,7 +214,7 @@ class BaseStrategy {
             }
 
             removeLatestUnclosedCandle(candles, this.candlesInterval);
-            logger.debug(`${this.name}: ${tradingSymbol} candles = ${candles.length}, interval=${this.candlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
+            // logger.debug(`${this.name}: ${tradingSymbol} candles = ${candles.length}, interval=${this.candlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
 
             if (!data) {
               data = {
@@ -280,7 +280,7 @@ class BaseStrategy {
                 return callback(null, { data, tradingSymbol, error: 'No trace candles fetched' });
               }
               data.candles = candles;
-              logger.debug(`${this.name}: ${tradingSymbol} tradeCandles = ${candles.length}, interval=${this.traceCandlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
+              // logger.debug(`${this.name}: ${tradingSymbol} tradeCandles = ${candles.length}, interval=${this.traceCandlesInterval}, last candle timestamp =  ${formatTimestampToString(candles[candles.length - 1].timestamp)}`);
 
               if (data.traceCandlesPrevDays && data.traceCandlesPrevDays.length > 0) {
                 data.traceCandles = _.concat([], data.traceCandlesPrevDays, data.candles);
@@ -363,7 +363,7 @@ class BaseStrategy {
 
             // get the last candle (i.e. prev trading day candle)
             const prevDayCandle = candles[candles.length - 1];
-            logger.info(`${this.name}: ${tradingSymbol}: prev day data = ${JSON.stringify(prevDayCandle)}`);
+            // logger.info(`${this.name}: ${tradingSymbol}: prev day data = ${JSON.stringify(prevDayCandle)}`);
             let data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
             if (!data) {
               data = {

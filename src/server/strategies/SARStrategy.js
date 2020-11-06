@@ -50,8 +50,7 @@ class SARStrategy extends BaseStrategy {
         }
       }
       return this.findSupportAndResistance();
-    })
-      .catch(console.error);
+    }).catch(console.error);
   }
 
   findSupportAndResistance() {
@@ -61,7 +60,6 @@ class SARStrategy extends BaseStrategy {
         const candles = data.candles || data.traceCandles;
         const uptrend = this.confirmUptrendWithVWAP(candles);
         const result = this.checkForMomentumWithStochastic(data.traceCandles);
-        console.log(data.tradingSymbol, uptrend ? "up" : "down", result);
         if (result.strongCrossOver && result.uptrend === uptrend) {
           const bp = this.findBreakPoint(data);
           const lastCandle = candles[candles.length - 1] || lastCandle.high;

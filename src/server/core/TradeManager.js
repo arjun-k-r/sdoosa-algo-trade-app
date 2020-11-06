@@ -83,7 +83,7 @@ class TradeManager {
         this.exitAllPositions().then(() => {
           this.isRunning = false;
           this.stopInProgress = false;
-        });
+        }).catch(console.error);
       } else {
         this.isRunning = false;
         this.stopInProgress = false;
@@ -123,7 +123,7 @@ class TradeManager {
                   } else {
                     callback(null, { trade });
                   }
-                });
+                }).catch(console.error);
               } else {
                 logger.info(`exitAllPositionsInternal: ${trade.tradingSymbol} target order is null`);
                 if (trade.isTrailingSL || trade.noTarget) {

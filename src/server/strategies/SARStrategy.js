@@ -13,7 +13,8 @@ import {
   calculateSharesWithRiskFactor,
   shouldPlaceTrade,
   isNear,
-  formatToInput
+  formatToInput,
+  getAvgCandleSize
   // formatTimestampToString
 } from '../utils/utils.js';
 // import SAR from '../indicators/SAR.js';
@@ -57,43 +58,50 @@ class SARStrategy extends BaseStrategy {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
       if (data && data.traceCandles && data.traceCandles.length) {
+        const traceCandles = data.traceCandles;
         const candles = data.candles || data.traceCandles;
-        const uptrend = this.confirmUptrendWithVWAP(candles);
-        const result = this.checkForMomentumWithStochastic(data.traceCandles);
-        if (result.strongCrossOver && result.uptrend === uptrend) {
-          const bp = this.findBreakPoint(data);
-          const lastCandle = candles[candles.length - 1] || lastCandle.high;
-          logger.info(`${tradingSymbol} got stochastic crossover confirmation bp :${bp}`);
-          this.generateTradeSignals(data, uptrend, bp || lastCandle.high);
+        const resultVWAP = this.checkVWAP(candles);
+        const resultStochastic = this.checkForMomentumWithStochastic(data.traceCandles);
+        const sameTrend = resultStochastic.uptrend === resultVWAP.uptrend;
+        const lastCandle = candles[candles.length - 1];
+        if (resultStochastic.strongCrossOver) {
+          console.log(tradingSymbol, resultStochastic, resultVWAP, lastCandle);
+          if (sameTrend || resultVWAP.isNear) {
+            const trigger = this.findBreakPoint(traceCandles, sameTrend ? lastCandle.close : resultVWAP.lastVWAP, resultStochastic.uptrend);
+            this.generateTradeSignals(data, resultStochastic.uptrend, trigger);
+          } else {
+            logger.info(`${tradingSymbol} : strong crossover happened, but trend is opposite`);
+          }
         }
       }
     });
   }
-  findBreakPoint(data, uptrend) {
-    const lastCandle = data.traceCandles[data.traceCandles.length - 1];
-    const sar = new SAR(data.traceCandles);
-    return sar.mostNearLevel(lastCandle.close, uptrend);
-    // const sarpoints = sar.calculateClusters();
-    // return sarpoints.map((sarpoint) => {
-    //   const [s, r] = sarpoint;
-    //   return uptrend ? r : s;
-    // }).find(sarpoint => {
-    //   if (isNear(sarpoint, lastCandle.close, .4, uptrend)) {
-    //     return true;
-    //   }
-    //   return false;
-    // });
+  findBreakPoint(candles, value, uptrend) {
+    const sar = new SAR(candles);
+    // return sar.mostNearLevel(lastCandle.close, uptrend);
+    const sarpoints = sar.calculateClusters();
+    return sarpoints.map((sarpoint) => {
+      const [s, r] = sarpoint;
+      return uptrend ? r : s;
+    }).find(sarpoint => {
+      if (isNear(sarpoint, value, .4, uptrend)) {
+        return true;
+      }
+      return false;
+    });
   }
   confirmTrade(tradeSignal, liveQuote) {
     const NEAR = 0.1;
     const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradeSignal.tradingSymbol);
     if (!data || !data.traceCandles)
       return false;
+
+    console.log(tradeSignal.tradingSymbol);
+
+    console.log("Check near", tradeSignal.trigger, liveQuote.cmp, NEAR);
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       return false;
     }
-
-    console.log(tradeSignal.tradingSymbol);
 
     // // if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
     // //   return false;
@@ -148,14 +156,16 @@ class SARStrategy extends BaseStrategy {
     const crossOver = nCrossOvers.includes(true);
     const uniqueCrossOver = nCrossOvers.filter(c => c).length === 1;
     const rsiConfirmation = this.confirmWithRSI(candles, uptrend);
-
+    const overBroughtOrOverSold = uptrend ? last.d < 20 : last.d > 80;
     return {
       nCrossOvers,
       uptrend,
       crossOver,
       uniqueCrossOver,
       rsiConfirmation,
-      strongCrossOver: uptrend ? last.d < 20 : last.d > 80 && crossOver && uniqueCrossOver && rsiConfirmation
+      overBroughtOrOverSold,
+      last,
+      strongCrossOver: overBroughtOrOverSold && crossOver && uniqueCrossOver && rsiConfirmation
     };
   }
 
@@ -185,12 +195,18 @@ class SARStrategy extends BaseStrategy {
     return tradeSignal.isBuy ? liveQuote.cmp >= lastCandle.close : liveQuote.cmp <= lastCandle.close;
   };
 
-  confirmUptrendWithVWAP(candles) {
+  checkVWAP(candles) {
     const input = formatToInput(candles);
-    const output = VWAP.calculate(input);
-    const lastOutput = output[output.length - 1];
+    const valuesVWAP = VWAP.calculate(input);
+    const lastVWAP = valuesVWAP[valuesVWAP.length - 1];
     const lastCandle = candles[candles.length - 1];
-    return lastOutput < lastCandle.close;
+    const avgCandleSize = getAvgCandleSize(candles);
+    return {
+      uptrend: lastVWAP < lastCandle.close,
+      lastVWAP,
+      // valuesVWAP,
+      isNear: Math.abs(lastVWAP - lastCandle.close) < avgCandleSize
+    };
   }
 
   confirmWithRSI(candles, isBuy) {

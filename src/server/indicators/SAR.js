@@ -2,13 +2,12 @@
   Author: Gokul T
 */
 
-import _ from "lodash";
-import { createClustors, range } from "../utils/utils";
+import { createClustors, range, getAvgCandleSize } from "../utils/utils";
 
 class SAR {
   constructor(candles) {
     this.candles = candles;
-    this.s = this.avgCandleSize();
+    this.avgCandleSize = getAvgCandleSize(candles);
     this.levels = [];
     this.calculate();
   }
@@ -24,22 +23,15 @@ class SAR {
       return Math.max(...range(candles.map(c => c.high), i, 6)) === candles[i].high;
     return false;
   }
-  avgCandleSize(candles = this.candles) {
-    const levels = [];
-    for (let i = 0; i < candles.length - 1; i++) {
-      levels.push(candles[i].high - candles[i].low);
-    }
-    return _.mean(levels);
-  }
   getAvgCandleSize() {
-    return this.s;
+    return this.avgCandleSize;
   }
   isFarFromLevel(l) {
-    const s = this.s;
-    return this.levels.filter(x => Math.abs(l - x) < s).length === 0;
+    return this.levels.filter(x => Math.abs(l - x) < this.avgCandleSize).length === 0;
   }
   mostNearLevel(l, up) {
     const filtered = this.getLevels().filter(x => up ? x >= l : x <= l);
+    console.log(l, up, this.getLevels(), filtered, filtered[up ? 0 : filtered.length - 1]);
     return filtered[up ? 0 : filtered.length - 1];
   }
   calculate() {
@@ -65,7 +57,7 @@ class SAR {
     return this.levels;
   }
   calculateClusters() {
-    return createClustors(this.getLevels(), this.s).map(c => [c[0], c[c.length - 1]]);
+    return createClustors(this.getLevels(), this.avgCandleSize).map(c => [c[0], c[c.length - 1]]);
   }
 }
 

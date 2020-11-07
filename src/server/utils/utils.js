@@ -435,6 +435,14 @@ export function range(arr, index, n) {
   return res;
 }
 
+export function getAvgCandleSize(candles) {
+  const levels = [];
+  for (let i = 0; i < candles.length - 1; i++) {
+    levels.push(candles[i].high - candles[i].low);
+  }
+  return _.mean(levels);
+}
+
 export function isNear(trigger, cmp, allowedChangePercentage, buy) {
   const allowedChange = allowedChangePercentage / 100;
   const near = trigger * allowedChange;

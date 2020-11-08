@@ -27,29 +27,44 @@ class SAR {
     return this.avgCandleSize;
   }
   isFarFromLevel(l) {
-    return this.levels.filter(x => Math.abs(l - x) < this.avgCandleSize).length === 0;
+    return this.nearLevels(l).length === 0;
+  }
+  nearLevels(l) {
+    return this.levels.filter(x => Math.abs(l - x) < this.avgCandleSize);
   }
   mostNearLevel(l, up) {
-    const filtered = this.getLevels().filter(x => up ? x >= l : x <= l);
-    console.log(l, up, this.getLevels(), filtered, filtered[up ? 0 : filtered.length - 1]);
-    return filtered[up ? 0 : filtered.length - 1];
+    const filtered = this.nearLevels(l).filter(x => up ? x >= l : x <= l);
+    console.log(this.avgCandleSize, filtered, this.levels);
+    if (filtered.length) {
+      return filtered[up ? filtered.length - 1 : 0];
+    }
+    return null;
   }
   calculate() {
     const candles = this.candles;
-    for (let i = 2; i < candles.length - 3; i++) {
-      if (this.isSupport(candles, i)) {
-        const l = candles[i].low;
-        // if (this.isFarFromLevel(l)) {
-        this.levels.push(l);
-        // }
-      }
-      if (this.isResistance(candles, i)) {
-        const l = candles[i].high;
-        // if (this.isFarFromLevel(l)) {
-        this.levels.push(l);
-        // }
+    let highest = candles[0].high, lowest = candles[0].low;
+    for (let i = 0; i < candles.length - 1; i++) {
+      const l = candles[i].low;
+      const h = candles[i].high;
+      if (highest < h)
+        highest = h;
+      if (lowest > l)
+        lowest = l;
+      if (i >= 2 && i < candles.length - 3) {
+        if (this.isSupport(candles, i)) {
+          // if (this.isFarFromLevel(l)) {
+          this.levels.push(l);
+          // }
+        }
+        if (this.isResistance(candles, i)) {
+          // if (this.isFarFromLevel(h)) {
+          this.levels.push(h);
+          // }
+        }
       }
     }
+    this.levels.push(highest);
+    this.levels.push(lowest);
     this.levels = this.levels.sort((a, b) => a - b);
     return this.levels;
   }

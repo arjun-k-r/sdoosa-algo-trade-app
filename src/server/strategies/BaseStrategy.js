@@ -376,6 +376,7 @@ class BaseStrategy {
             }
             callback(null, { data, tradingSymbol });
           }).catch(err => {
+            console.log(err);
             callback(null, { data: null, tradingSymbol, error: err });
           });
         };

@@ -28,6 +28,8 @@ const RSI = require('technicalindicators').RSI;
 const Stochastic = require('technicalindicators').Stochastic;
 const CrossUp = require('technicalindicators').CrossUp;
 const CrossDown = require('technicalindicators').CrossDown;
+const bullish = require('technicalindicators').bullish;
+const bearish = require('technicalindicators').bearish;
 
 const config = getConfig();
 
@@ -59,36 +61,53 @@ class SARStrategy extends BaseStrategy {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
       if (data && data.traceCandles && data.traceCandles.length) {
         const traceCandles = data.traceCandles;
-        const candles = data.candles || data.traceCandles;
+        const candles = data.candles || traceCandles.slice(traceCandles.length - 75);
+        const trend = this.findMarketTrend(candles);
         const resultVWAP = this.checkVWAP(candles);
-        const resultStochastic = this.checkForMomentumWithStochastic(data.traceCandles);
-        const sameTrend = resultStochastic.uptrend === resultVWAP.uptrend;
         const lastCandle = candles[candles.length - 1];
-        if (resultStochastic.strongCrossOver) {
-          console.log(tradingSymbol, resultStochastic, resultVWAP, lastCandle);
-          if (sameTrend || resultVWAP.isNear) {
-            const trigger = this.findBreakPoint(traceCandles, sameTrend ? lastCandle.close : resultVWAP.lastVWAP, resultStochastic.uptrend);
-            this.generateTradeSignals(data, resultStochastic.uptrend, trigger);
-          } else {
-            logger.info(`${tradingSymbol} : strong crossover happened, but trend is opposite`);
+
+        console.log(tradingSymbol, trend, resultVWAP, lastCandle);
+
+        if (trend === 0) {
+          const resultStochastic = this.checkMomentumWithStochastic(traceCandles);
+          if (resultStochastic.strongCrossOver) {
+            const trigger = this.findBreakPoint(traceCandles, lastCandle.close, resultStochastic.uptrend);
+            this.generateTradeSignals(data, resultStochastic.uptrend, trigger || lastCandle.close);
+          }
+        } else {
+          const resultRSI = this.checkRSI(traceCandles);
+          if (trend === 1 && resultRSI.overSold) {
+            const trigger = this.findBreakPoint(traceCandles, lastCandle.close, true);
+            this.generateTradeSignals(data, true, trigger || lastCandle.close);
+          }
+          if (trend === -1 && resultRSI.overBrought) {
+            const trigger = this.findBreakPoint(traceCandles, lastCandle.close, false);
+            this.generateTradeSignals(data, false, trigger || lastCandle.close);
           }
         }
       }
     });
   }
+  findMarketTrend(candles) {
+    const formattedInput = formatToInput(candles);
+    if (bullish(formattedInput)) return 1;
+    if (bearish(formattedInput)) return -1;
+    return 0;
+  }
   findBreakPoint(candles, value, uptrend) {
     const sar = new SAR(candles);
-    // return sar.mostNearLevel(lastCandle.close, uptrend);
-    const sarpoints = sar.calculateClusters();
-    return sarpoints.map((sarpoint) => {
-      const [s, r] = sarpoint;
-      return uptrend ? r : s;
-    }).find(sarpoint => {
-      if (isNear(sarpoint, value, .4, uptrend)) {
-        return true;
-      }
-      return false;
-    });
+    return sar.mostNearLevel(value, uptrend);
+    // const sarpoints = sar.calculateClusters();
+    // console.log(sarpoints);
+    // return sarpoints.map((sarpoint) => {
+    //   const [s, r] = sarpoint;
+    //   return uptrend ? r : s;
+    // }).find(sarpoint => {
+    //   if (isNear(sarpoint, value, .4, uptrend)) {
+    //     return true;
+    //   }
+    //   return false;
+    // });
   }
   confirmTrade(tradeSignal, liveQuote) {
     const NEAR = 0.1;
@@ -108,7 +127,7 @@ class SARStrategy extends BaseStrategy {
     // // }
     const tm = TradeManager.getInstance();
     console.log("Check Stochastic");
-    const result = this.checkForMomentumWithStochastic(data.traceCandles);
+    let result = this.checkMomentumWithStochastic(data.traceCandles);
     if (!result.strongCrossOver || tradeSignal.isBuy !== result.uptrend) {
       tm.disableTradeSignal(tradeSignal);
       logger.info(`Momentum lost, disabling ${this.getSignalDetails(tradeSignal)}`);
@@ -121,8 +140,8 @@ class SARStrategy extends BaseStrategy {
     // }
 
     console.log("Check RSI");
-
-    if (!this.confirmWithRSI(data.traceCandles, tradeSignal.isBuy)) {
+    result = this.checkRSI(data.traceCandles, tradeSignal.isBuy);
+    if (!result[tradeSignal.isBuy ? "overSold" : "overBrought"]) {
       tm.disableTradeSignal(tradeSignal);
       logger.info(`RSI confirmation lost, disabling ${this.getSignalDetails(tradeSignal)}`);
       return false;
@@ -131,7 +150,7 @@ class SARStrategy extends BaseStrategy {
     return true;
   };
 
-  checkForMomentumWithStochastic(candles) {
+  checkMomentumWithStochastic(candles) {
     let period = 8;
     let signalPeriod = 3;
     const formattedInput = formatToInput(candles);
@@ -155,17 +174,15 @@ class SARStrategy extends BaseStrategy {
     const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
     const crossOver = nCrossOvers.includes(true);
     const uniqueCrossOver = nCrossOvers.filter(c => c).length === 1;
-    const rsiConfirmation = this.confirmWithRSI(candles, uptrend);
     const overBroughtOrOverSold = uptrend ? last.d < 20 : last.d > 80;
     return {
       nCrossOvers,
       uptrend,
       crossOver,
       uniqueCrossOver,
-      rsiConfirmation,
       overBroughtOrOverSold,
       last,
-      strongCrossOver: overBroughtOrOverSold && crossOver && uniqueCrossOver && rsiConfirmation
+      strongCrossOver: overBroughtOrOverSold && crossOver && uniqueCrossOver
     };
   }
 
@@ -209,14 +226,16 @@ class SARStrategy extends BaseStrategy {
     };
   }
 
-  confirmWithRSI(candles, isBuy) {
+  checkRSI(candles) {
     const inputRSI = {
       period: 8
     };
     inputRSI.values = candles.map(c => c.volume);
     const output = RSI.calculate(inputRSI);
     const last = output[output.length - 1];
-    return isBuy ? last < 80 : last > 20;
+    const overBrought = last >= 80;
+    const overSold = last <= 20;
+    return { overBroughtOrOverSold: overBrought || overSold, overBrought, overSold };
   }
 
   shouldPlaceTrade(tradeSignal, liveQuote) {

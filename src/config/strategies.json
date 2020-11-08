@@ -44,15 +44,12 @@
       "RAMCOCEM",
       "TECHM",
       "INDIGO",
-      "ULTRACEMCO",
-      "SAIL",
-      "IDEA",
-      "GRASIM",
-      "EXIDEIND",
-      "M&MFIN",
-      "ESCORTS",
-      "VEDL",
-      "BHEL"
+      "JINDALSTEL",
+      "HAVELLS",
+      "SUNPHARMA",
+      "CHOLAFIN",
+      "WIPRO",
+      "TATACONSUM"
     ]
   },
   {
@@ -79,15 +76,15 @@
     "slPercentage": 0.6,
     "targetPercentage": 1.4,
     "stocks": [
-      "WIPRO",
-      "SBILIFE",
-      "AMBUJACEM",
-      "DABUR",
-      "TATACONSUM",
+      "ICICIBANK",
+      "ADANIENT",
+      "INDIGO",
       "JINDALSTEL",
-      "TATACHEM",
-      "CIPLA",
-      "HAVELLS"
+      "HAVELLS",
+      "SUNPHARMA",
+      "CHOLAFIN",
+      "WIPRO",
+      "TATACONSUM"
     ]
   },
   {

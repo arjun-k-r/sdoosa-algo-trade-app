@@ -64,8 +64,7 @@ class SARStrategy extends BaseStrategy {
         const candles = data.candles || traceCandles.slice(traceCandles.length - 75);
         const isChoppyMarket = this.isChoppyMarket(traceCandles);
         const resultVWAP = this.checkVWAP(candles);
-        const lastCandle = candles[candles.length - 1];
-        console.log(isChoppyMarket ? "CHOPPY" : resultVWAP.uptrend ? "UP" : "DOWN", tradingSymbol, resultVWAP, lastCandle);
+        console.log(tradingSymbol, isChoppyMarket ? "CHOPPY" : resultVWAP.uptrend ? "UP" : "DOWN");
         if (isChoppyMarket) {
           const resultStochastic = this.checkMomentumWithStochastic(traceCandles);
           if (resultStochastic.strongCrossOver) {
@@ -74,10 +73,13 @@ class SARStrategy extends BaseStrategy {
           }
         } else {
           const uptrend = resultVWAP.uptrend;
-          const resultRSI = this.checkRSI(traceCandles, uptrend);
+          let resultRSI = this.checkRSI(traceCandles, uptrend);
+          if (!resultRSI.chanceOfTrendReversal && resultVWAP.isNear) {
+            resultRSI = this.checkRSI(traceCandles, !uptrend);
+          }
           if (resultRSI.chanceOfTrendReversal) {
             let trigger = this.getTrigger(traceCandles, uptrend);
-            this.generateTradeSignals(data, uptrend, trigger, alerts[1]);
+            this.generateTradeSignals(data, resultRSI.uptrend, trigger, alerts[1]);
           }
         }
       }
@@ -127,12 +129,14 @@ class SARStrategy extends BaseStrategy {
 
     if (tradeSignal.alertBy === alerts[0]) {
       console.log("Check Stochastic");
-      let result = this.checkMomentumWithStochastic(data.traceCandles);
+      const result = this.checkMomentumWithStochastic(data.traceCandles);
       if (!result.strongCrossOver || tradeSignal.isBuy !== result.uptrend) {
         tm.disableTradeSignal(tradeSignal);
         logger.info(`Momentum lost, disabling ${this.getSignalDetails(tradeSignal)}`);
         return false;
       }
+      if (!result.reversalStarted)
+        return false;
     }
 
     // console.log("check bollinger");
@@ -142,7 +146,7 @@ class SARStrategy extends BaseStrategy {
 
     if (tradeSignal.alertBy === alerts[1]) {
       console.log("Check RSI");
-      result = this.checkRSI(data.traceCandles, tradeSignal.isBuy);
+      const result = this.checkRSI(data.traceCandles, tradeSignal.isBuy);
       if (!result.trendReversalHappend) {
         tm.disableTradeSignal(tradeSignal);
         logger.info(`RSI confirmation lost, disabling ${this.getSignalDetails(tradeSignal)}`);
@@ -250,6 +254,7 @@ class SARStrategy extends BaseStrategy {
       .map(o => this.isOverBroughtOrOverSold(o, uptrend))
       .includes(true);
     return {
+      uptrend,
       overBroughtOrOverSold: overBrought || overSold,
       overBrought,
       overSold,

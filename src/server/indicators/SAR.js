@@ -34,7 +34,6 @@ class SAR {
   }
   mostNearLevel(l, up) {
     const filtered = this.nearLevels(l).filter(x => up ? x >= l : x <= l);
-    console.log(this.avgCandleSize, filtered, this.levels);
     if (filtered.length) {
       return filtered[up ? filtered.length - 1 : 0];
     }

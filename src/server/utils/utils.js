@@ -133,7 +133,7 @@ export const getIntradaySquareOffTime = (date) => {
   const squareOffTime = new Date(date);
 
   squareOffTime.setHours(15);
-  squareOffTime.setMinutes(10); // NOTE: upstox auto squares off at 15:15 hence algo square should be at least 2 mins before it
+  squareOffTime.setMinutes(5); // NOTE: upstox auto squares off at 15:10 hence algo square should be at least 2 mins before it
   squareOffTime.setSeconds(0);
   squareOffTime.setMilliseconds(0);
 

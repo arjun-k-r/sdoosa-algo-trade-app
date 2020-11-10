@@ -29,6 +29,7 @@ const Stochastic = require('technicalindicators').Stochastic;
 const CrossUp = require('technicalindicators').CrossUp;
 const CrossDown = require('technicalindicators').CrossDown;
 const ADX = require('technicalindicators').ADX;
+const MACD = require('technicalindicators').MACD;
 
 const bullish = require('technicalindicators').bullish;
 const bearish = require('technicalindicators').bearish;
@@ -77,20 +78,23 @@ class SARStrategy extends BaseStrategy {
 
         const resultVWAP = this.checkVWAP(candles);
         const isChoppyMarket = this.isChoppyMarket(data.traceCandles);
-        // const lastCandle = candles[candles.length - 1];
-        // console.log(tradingSymbol, markets[isChoppyMarket ? 0 : 1], resultVWAP.uptrend ? "UP" : "DOWN");
-        // console.log(lastCandle, resultVWAP);
+        const lastCandle = candles[candles.length - 1];
+        console.log(tradingSymbol, markets[isChoppyMarket ? 0 : 1], resultVWAP.uptrend ? "UP" : "DOWN");
+        console.log(lastCandle.date.toLocaleTimeString());
 
         if (!isChoppyMarket) {
           const resultBollinger = this.confirmWithBollingerBands(traceCandles, resultVWAP.uptrend);
-          // console.log(resultBollinger);
           if (resultBollinger.chanceOfTrendReversal) {
+            // console.log(resultBollinger);
             if (!resultBollinger.inSqueze) {
               const resultRSI = this.checkRSI(traceCandles, resultBollinger.uptrend);
+              const resultMACD = this.checkMACD(traceCandles, resultBollinger.uptrend);
               // console.log(resultRSI);
-              if (resultRSI.positive === resultBollinger.uptrend) {
+              if (resultRSI.positive === resultBollinger.uptrend && resultMACD) {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[0]);
+              } else {
+                console.log("RSI  in squeze", resultRSI.positive === resultBollinger.uptrend, "MACD", resultMACD);
               }
             }
             else {
@@ -101,6 +105,8 @@ class SARStrategy extends BaseStrategy {
               if (resultStochastic.crossOver && resultRSI.positive === resultBollinger.uptrend) {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[1]);
+              } else {
+                console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend);
               }
             }
           }
@@ -119,6 +125,8 @@ class SARStrategy extends BaseStrategy {
             if (resultRSI.positive === resultBollinger.uptrend && resultStochastic.crossOver && resultVWAP.crossed) {
               let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
               this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[2]);
+            } else {
+              console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend, resultVWAP.crossed);
             }
           }
         }
@@ -193,6 +201,26 @@ class SARStrategy extends BaseStrategy {
 
     return true;
   };
+  checkMACD(candles, uptrend) {
+    const macdInput = {
+      values: candles.map(c => c.close),
+      fastPeriod: 5,
+      slowPeriod: 8,
+      signalPeriod: 3,
+      SimpleMAOscillator: false,
+      SimpleMASignal: false
+    };
+    const output = MACD.calculate(macdInput);
+    const crossOverInput = output.reduce((acc, o) => {
+      acc.lineA.push(o.MACD);
+      acc.lineB.push(o.signal);
+      return acc;
+    }, { lineA: [], lineB: [] });
+    const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
+    const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
+    const crossOver = nCrossOvers[2];
+    return crossOver;
+  }
 
   checkMomentumWithStochastic(candles) {
     let period = 8;

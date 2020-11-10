@@ -1014,6 +1014,7 @@ class TradeManager {
       logger.info(`${tradeSignal.tradingSymbol}: Trade signal already exists so not adding again`);
       return;
     }
+    soundAlert(5);
 
     const oppTradeSignal = this.getOppositeTradeSignal(tradeSignal);
     if (oppTradeSignal && !oppTradeSignal.considerOppositeTrade && oppTradeSignal.isTriggered) {
@@ -1023,7 +1024,6 @@ class TradeManager {
       this.disableTradeSignal(tradeSignal);
       this.tradeSignals.push(tradeSignal);
       this.saveTradeSignalsToFile(true);
-      soundAlert(5);
     } else {
       this.tradeSignals.push(tradeSignal);
       if (this.ticker) {

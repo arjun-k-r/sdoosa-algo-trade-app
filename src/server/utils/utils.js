@@ -5,7 +5,6 @@
 import _ from 'lodash';
 import { getHolidays } from '../config.js';
 
-export { default as soundAlert } from "./sound-alert";
 const holidays = getHolidays();
 
 const SUNDAY = 0;
@@ -476,3 +475,15 @@ export function formatToInput(candles) {
   }
   return result;
 }
+
+export function soundAlert(n = 10) {
+  console.log("********* Sound alert *************");
+  console.log("\x07");
+  let count = 1;
+  const interval = setInterval(() => {
+    console.log("\x07");
+    count = count + 1;
+    if (count > n) clearInterval(interval);
+  }, 300);
+}
+

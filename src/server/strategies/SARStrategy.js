@@ -77,17 +77,17 @@ class SARStrategy extends BaseStrategy {
 
         const resultVWAP = this.checkVWAP(candles);
         const isChoppyMarket = this.isChoppyMarket(data.traceCandles);
-
-        console.log(tradingSymbol, markets[isChoppyMarket ? 0 : 1], resultVWAP.uptrend ? "UP" : "DOWN");
-        console.log(candles[candles.length - 1]);
+        // const lastCandle = candles[candles.length - 1];
+        // console.log(tradingSymbol, markets[isChoppyMarket ? 0 : 1], resultVWAP.uptrend ? "UP" : "DOWN");
+        // console.log(lastCandle, resultVWAP);
 
         if (!isChoppyMarket) {
           const resultBollinger = this.confirmWithBollingerBands(traceCandles, resultVWAP.uptrend);
-          console.log(resultBollinger);
+          // console.log(resultBollinger);
           if (resultBollinger.chanceOfTrendReversal) {
             if (!resultBollinger.inSqueze) {
-              console.log(resultRSI);
               const resultRSI = this.checkRSI(traceCandles, resultBollinger.uptrend);
+              // console.log(resultRSI);
               if (resultRSI.positive === resultBollinger.uptrend) {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[0]);
@@ -96,8 +96,8 @@ class SARStrategy extends BaseStrategy {
             else {
               const resultStochastic = this.checkMomentumWithStochastic(traceCandles);
               const resultRSI = this.checkRSI(traceCandles, resultBollinger.uptrend);
-              console.log(resultStochastic);
-              console.log(resultRSI);
+              // console.log(resultStochastic);
+              // console.log(resultRSI);
               if (resultStochastic.crossOver && resultRSI.positive === resultBollinger.uptrend) {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[1]);
@@ -113,10 +113,10 @@ class SARStrategy extends BaseStrategy {
           if (resultBollinger.chanceOfTrendReversal && !resultBollinger.inSqueze) {
             const resultRSI = this.checkRSI(traceCandles, resultBollinger.uptrend);
             const resultStochastic = this.checkMomentumWithStochastic(traceCandles);
-            console.log(resultBollinger);
-            console.log(resultStochastic);
-            console.log(resultRSI);
-            if (resultRSI.positive === resultBollinger.uptrend && resultStochastic.strongCrossOver) {
+            // console.log(resultBollinger);
+            // console.log(resultStochastic);
+            // console.log(resultRSI);
+            if (resultRSI.positive === resultBollinger.uptrend && resultStochastic.crossOver && resultVWAP.crossed) {
               let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
               this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[2]);
             }
@@ -129,8 +129,8 @@ class SARStrategy extends BaseStrategy {
     const lastCandle = traceCandles[traceCandles.length - 1];
     price = price || lastCandle.close;
     let trigger = this.findBreakPoint(traceCandles, price, uptrend);
-    if (!trigger || !isNear(trigger, lastCandle.close, .2)) {
-      const n = Math.max(price * .001, .05);
+    if (!trigger || !isNear(trigger, lastCandle.close, .01)) {
+      const n = Math.max(price * .0001, .05);
       if (uptrend)
         trigger = roundToValidPrice(price + n);
       else
@@ -217,13 +217,13 @@ class SARStrategy extends BaseStrategy {
 
     const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
     const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
-    const crossOver = nCrossOvers.includes(true);
     const uniqueCrossOver = nCrossOvers.filter(c => c).length === 1;
     const overBroughtOrOverSold = uptrend ? last.d < 20 : last.d > 80;
+    const crossOver = nCrossOvers[2];
     return {
+      crossOver,
       nCrossOvers,
       uptrend,
-      crossOver,
       uniqueCrossOver,
       overBroughtOrOverSold,
       last,
@@ -268,14 +268,15 @@ class SARStrategy extends BaseStrategy {
     const lastBand = bollingerBands[bollingerBands.length - 1];
     const trendReversalHappend = crossOvers.includes(true);
     const avgCandleSize = getAvgCandleSize(traceCandles);
-    const inSqueze = avgCandleSize > Math.abs(lastBand.upper - lastBand.lower);
+    const inSqueze = avgCandleSize * 2 > Math.abs(lastBand.upper - lastBand.lower);
     return {
       uptrend,
       crossOvers,
       chanceOfTrendReversal: crossOvers[crossOvers.length - 1],
       trendReversalHappend,
       inSqueze,
-      lastBand
+      lastBand,
+      avgCandleSize
     };
   };
 
@@ -284,9 +285,12 @@ class SARStrategy extends BaseStrategy {
     const valuesVWAP = VWAP.calculate(input);
     const lastVWAP = valuesVWAP[valuesVWAP.length - 1];
     const lastCandle = candles[candles.length - 1];
+    const uptrend = lastVWAP < lastCandle.close;
+    const crossed = uptrend ? lastCandle.open < lastVWAP && lastVWAP < lastCandle.close : lastCandle.open > lastVWAP && lastVWAP > lastCandle.close;
     return {
-      uptrend: lastVWAP < lastCandle.close,
+      uptrend,
       lastVWAP,
+      crossed,
       // valuesVWAP,
       isNear: isNear(lastVWAP, lastCandle.close, .1)
     };

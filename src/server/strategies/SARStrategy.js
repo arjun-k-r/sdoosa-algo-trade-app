@@ -14,7 +14,7 @@ import {
   shouldPlaceTrade,
   isNear,
   formatToInput,
-  getAvgCandleSize
+  // getAvgCandleSize
   // formatTimestampToString
 } from '../utils/utils.js';
 // import SAR from '../indicators/SAR.js';
@@ -66,34 +66,35 @@ class SARStrategy extends BaseStrategy {
         const resultVWAP = this.checkVWAP(candles);
         console.log(tradingSymbol, isChoppyMarket ? "CHOPPY" : resultVWAP.uptrend ? "UP" : "DOWN");
         if (isChoppyMarket) {
-          const resultStochastic = this.checkMomentumWithStochastic(traceCandles);
+          const resultStochastic = this.checkMomentumWithStochastic(candles);
           if (resultStochastic.strongCrossOver) {
             let trigger = this.getTrigger(traceCandles, resultStochastic.uptrend);
             this.generateTradeSignals(data, resultStochastic.uptrend, trigger, alerts[0]);
           }
         } else {
           const uptrend = resultVWAP.uptrend;
-          let resultRSI = this.checkRSI(traceCandles, uptrend);
+          let resultRSI = this.checkRSI(candles, uptrend);
           if (!resultRSI.chanceOfTrendReversal && resultVWAP.isNear) {
-            resultRSI = this.checkRSI(traceCandles, !uptrend);
+            resultRSI = this.checkRSI(candles, !uptrend);
           }
           if (resultRSI.chanceOfTrendReversal) {
-            let trigger = this.getTrigger(traceCandles, uptrend);
+            let trigger = this.getTrigger(traceCandles, uptrend, resultVWAP.lastVWAP);
             this.generateTradeSignals(data, resultRSI.uptrend, trigger, alerts[1]);
           }
         }
       }
     });
   }
-  getTrigger(traceCandles, uptrend) {
+  getTrigger(traceCandles, uptrend, price) {
     const lastCandle = traceCandles[traceCandles.length - 1];
-    let trigger = this.findBreakPoint(traceCandles, lastCandle.close, uptrend);
-    if (!trigger) {
-      const n = Math.max(lastCandle.close * .001, .05);
+    price = price || lastCandle.close;
+    let trigger = this.findBreakPoint(traceCandles, price, uptrend);
+    if (!trigger || !isNear(trigger, lastCandle.close, .2)) {
+      const n = Math.max(price * .001, .05);
       if (uptrend)
-        trigger = roundToValidPrice(lastCandle.close + n);
+        trigger = roundToValidPrice(price + n);
       else
-        trigger = roundToValidPrice(lastCandle.close - n);
+        trigger = roundToValidPrice(price - n);
     }
     return trigger;
   }
@@ -116,8 +117,14 @@ class SARStrategy extends BaseStrategy {
 
     console.log(tradeSignal.tradingSymbol);
 
-    console.log("Check near", tradeSignal.trigger, liveQuote.cmp, NEAR);
+    const tm = TradeManager.getInstance();
+
+    console.log("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
+      if ((tradeSignal.isBuy && tradeSignal.trigger < liveQuote.cmp) || (!tradeSignal.isBuy && tradeSignal.trigger > liveQuote.cmp)) {
+        tm.disableTradeSignal(tradeSignal);
+        logger.info(`Trigger already crossed, disabling ${this.getSignalDetails(tradeSignal)}`);
+      }
       return false;
     }
 
@@ -125,7 +132,6 @@ class SARStrategy extends BaseStrategy {
     // //   return false;
     // // }
 
-    const tm = TradeManager.getInstance();
 
     if (tradeSignal.alertBy === alerts[0]) {
       console.log("Check Stochastic");
@@ -176,7 +182,7 @@ class SARStrategy extends BaseStrategy {
     }, { lineA: [], lineB: [] });
     const last = stochasticOutput[stochasticOutput.length - 1];
     const uptrend = last.k > last.d;
-    const reversalStarted = Math.abs(last.k - last.d) > 5;
+    const reversalStarted = Math.abs(last.k - last.d) > 3;
 
     const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
     const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
@@ -226,12 +232,11 @@ class SARStrategy extends BaseStrategy {
     const valuesVWAP = VWAP.calculate(input);
     const lastVWAP = valuesVWAP[valuesVWAP.length - 1];
     const lastCandle = candles[candles.length - 1];
-    const avgCandleSize = getAvgCandleSize(candles);
     return {
       uptrend: lastVWAP < lastCandle.close,
       lastVWAP,
       // valuesVWAP,
-      isNear: Math.abs(lastVWAP - lastCandle.close) < avgCandleSize
+      isNear: isNear(lastVWAP, lastCandle.close, .2)
     };
   }
   isOverBroughtOrOverSold(last, uptrend) {

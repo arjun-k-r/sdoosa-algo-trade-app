@@ -5,6 +5,7 @@
 import _ from 'lodash';
 import { getHolidays } from '../config.js';
 
+export { default as soundAlert } from "./sound-alert";
 const holidays = getHolidays();
 
 const SUNDAY = 0;

@@ -15,7 +15,8 @@ import {
   calculateProfitLossCharges,
   formatDateToString,
   getIntradaySquareOffTime,
-  isMarketOpen
+  isMarketOpen,
+  soundAlert
 } from '../utils/utils.js';
 import Ticker from './Ticker.js';
 import { getStrategyInstance } from '../utils/strategy-utils.js';
@@ -399,6 +400,7 @@ class TradeManager {
             logger.info(`${tradingSymbol}: Successfully executed trade and set the trade signal triggered to ${trade.tradeSignal.isTriggered}`);
 
             tradeSignalBuy.orderPlacementInProgress = false;
+            soundAlert();
           }
         }).catch(err => {
           logger.error(`checkTradeSignalTriggerAndPlaceOrders:tradeSignalBuy: Error: ${JSON.stringify(err)}`);
@@ -1021,6 +1023,7 @@ class TradeManager {
       this.disableTradeSignal(tradeSignal);
       this.tradeSignals.push(tradeSignal);
       this.saveTradeSignalsToFile(true);
+      soundAlert(5);
     } else {
       this.tradeSignals.push(tradeSignal);
       if (this.ticker) {

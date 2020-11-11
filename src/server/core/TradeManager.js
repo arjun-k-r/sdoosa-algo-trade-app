@@ -971,6 +971,19 @@ class TradeManager {
       ts1.target === ts2.target; // there can be multiple sub trades for same trade with different stoploss & target values
   }
 
+  sameTradeSignals(ts1, ts2) {
+    if (!ts1 || !ts2) {
+      return false;
+    }
+    return ts1.broker === ts2.broker && // This is IMP: each tradeSignal is separate for each broker
+      ts1.strategy === ts2.strategy &&
+      ts1.tradingSymbol === ts2.tradingSymbol;
+  }
+  disableOldTradeSignals(tradeSignal) {
+    return _.filter(this.tradeSignals, ts => {
+      return this.sameTradeSignals(ts, tradeSignal);
+    }).forEach(this.disableTradeSignal);
+  }
   isTradeSignalExists(tradeSignal) {
     return _.some(this.tradeSignals, ts => {
       return this.compareTradeSignals(ts, tradeSignal);
@@ -1025,6 +1038,7 @@ class TradeManager {
       this.tradeSignals.push(tradeSignal);
       this.saveTradeSignalsToFile(true);
     } else {
+      this.disableOldTradeSignals(tradeSignal);
       this.tradeSignals.push(tradeSignal);
       if (this.ticker) {
         this.ticker.registerSymbols(tradeSignal.tradingSymbol);

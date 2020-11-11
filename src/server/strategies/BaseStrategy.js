@@ -288,7 +288,12 @@ class BaseStrategy {
                 data.traceCandles = candles;
               }
               callback(null, { data, tradingSymbol });
+            }).catch((err) => {
+              logger.error(`${this.name}: Error while fetching current day candles of ${tradingSymbol}, Error: ${JSON.stringify(err)}`);
+              callback(null, { data, tradingSymbol, error: err });
             });
+
+
           }).catch(err => {
             logger.error(`${this.name}: Error while fetching trace candles of prev days, Error: ${JSON.stringify(err)}`);
             callback(null, { data, tradingSymbol, error: err });

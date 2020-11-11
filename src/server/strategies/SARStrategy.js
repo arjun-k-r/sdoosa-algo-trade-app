@@ -57,16 +57,23 @@ class SARStrategy extends BaseStrategy {
     if (this.maxTradesReached) {
       return Promise.resolve();
     }
-
+    console.log("process started");
     return this.fetchTraceCandlesHistory().then(() => {
+      console.log("traced candle history");
+
       if (!config.sandboxTesting) {
         const now = new Date();
         if (now < this.strategyStartTime) {
+          logger.info(`Stratery starting time is ${this.stratergyStartTime}`);
           return;
         }
       }
-      return this.findSupportAndResistance();
-    }).catch(console.error);
+      try {
+        this.findSupportAndResistance();
+      } catch (err) {
+        console.error("findSupportAndResistance", err);
+      }
+    });
   }
 
   findSupportAndResistance() {
@@ -182,17 +189,20 @@ class SARStrategy extends BaseStrategy {
 
     const resultBollinger = this.confirmWithBollingerBands(data.traceCandles, tradeSignal.isBuy);
     if (!resultBollinger.trendReversalHappend) {
+      tradeSignal.message = (tradeSignal.message || "") + " | Bollinger lost,so disabling";
       tm.disableTradeSignal(tradeSignal);
-      logger.info(`Bollinger confirmation lost, disabling ${this.getSignalDetails(tradeSignal)}`);
+      logger.info(`${tradeSignal.message} ${this.getSignalDetails(tradeSignal)}`);
       return false;
     }
 
     if (tradeSignal.signalBy === signalTypes[1] || tradeSignal.signalBy === signalTypes[2]) {
       console.log("Check Stochastic");
       const result = this.checkMomentumWithStochastic(data.traceCandles);
-      if (!result.strongCrossOver || tradeSignal.isBuy !== result.uptrend) {
+      if (!result.nCrossOvers.includes(true) || tradeSignal.isBuy !== result.uptrend) {
+        tradeSignal.message = (tradeSignal.message || "") + " | Momentum lost,so disabling";
+
         tm.disableTradeSignal(tradeSignal);
-        logger.info(`Momentum lost, disabling ${this.getSignalDetails(tradeSignal)}`);
+        logger.info(`${tradeSignal.message} ${this.getSignalDetails(tradeSignal)}`);
         return false;
       }
       if (!result.reversalStarted)
@@ -204,9 +214,9 @@ class SARStrategy extends BaseStrategy {
   checkMACD(candles, uptrend) {
     const macdInput = {
       values: candles.map(c => c.close),
-      fastPeriod: 5,
-      slowPeriod: 8,
-      signalPeriod: 3,
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
       SimpleMAOscillator: false,
       SimpleMASignal: false
     };

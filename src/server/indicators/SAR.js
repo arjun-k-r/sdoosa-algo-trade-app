@@ -10,6 +10,7 @@ class SAR {
     this.avgCandleSize = getAvgCandleSize(candles);
     this.levels = [];
     this.calculate();
+    this.clusters = this.calculateClusters();
   }
   isSupport(candles, i) {
     const support = candles[i].low < candles[i - 1].low && candles[i].low < candles[i + 1].low && candles[i + 1].low < candles[i + 2].low && candles[i - 1].low < candles[i - 2].low;
@@ -72,6 +73,56 @@ class SAR {
   }
   calculateClusters() {
     return createClustors(this.getLevels(), this.avgCandleSize).map(c => [c[0], c[c.length - 1]]);
+  }
+  currentSupportAndResisitance(cmp) {
+    const clusters = this.calculateClusters();
+    let s, r;
+    for (let i = 0; i < clusters.length; i++) {
+      const cluster = clusters[i];
+      if (cluster[0] > cmp) {
+        r = cluster[1];
+        if (i)
+          s = clusters[i - 1][0];
+        break;
+      }
+      else if (cluster[1] > cmp) {
+        r = cluster[1];
+        if (cluster[0] < cmp) {
+          s = cluster[0];
+          break;
+        }
+        else if (i) {
+          s = clusters[i - 1][0];
+        }
+      }
+    }
+    const perfect = s < cmp && r > cmp;
+    return {
+      perfect,
+      s,
+      r
+    };
+  }
+  getClusters() {
+    return this.clusters;
+  }
+  breakOutPoint(cmp) {
+    const clusters = this.getClusters();
+    const filtered = clusters.map(c => c[1]).filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return filtered[filtered.length - 1];
+  }
+  breakDownPoint(cmp) {
+    const clusters = this.getClusters();
+    const filtered = clusters.map(c => c[0]).filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return filtered[0];
+  }
+  isBreakOut(cmp) {
+    const breakOutPoint = this.breakOutPoint(cmp);
+    return breakOutPoint && cmp > breakOutPoint;
+  }
+  isBreakDown(cmp) {
+    const breakDownPoint = this.breakDownPoint(cmp);
+    return breakDownPoint && cmp < breakDownPoint;
   }
 }
 

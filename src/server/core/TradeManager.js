@@ -982,7 +982,7 @@ class TradeManager {
   disableOldTradeSignals(tradeSignal) {
     return _.filter(this.tradeSignals, ts => {
       return this.sameTradeSignals(ts, tradeSignal);
-    }).forEach(this.disableTradeSignal);
+    }).forEach((s) => this.disableTradeSignal(s));
   }
   isTradeSignalExists(tradeSignal) {
     return _.some(this.tradeSignals, ts => {

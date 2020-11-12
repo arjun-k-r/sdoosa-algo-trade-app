@@ -39,9 +39,10 @@ const config = getConfig();
 
 const markets = ["Choppy", "Trending"];
 const momentums = ["Stochastic", "RSI"];
+const trendConfirmations = ["MACD"];
 
 const signalTypes = [
-  markets[1] + "-" + momentums[1],
+  markets[1] + "-" + momentums[1] + "-" + trendConfirmations[0],
   markets[1] + "-" + momentums[0] + "-" + momentums[1],
   markets[0] + "-" + momentums[0] + "-" + momentums[1]
 ];
@@ -101,7 +102,7 @@ class SARStrategy extends BaseStrategy {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[0]);
               } else {
-                console.log("RSI  in squeze", resultRSI.positive === resultBollinger.uptrend, "MACD", resultMACD);
+                // console.log("RSI  in squeze", resultRSI.positive === resultBollinger.uptrend, "MACD", resultMACD);
               }
             }
             else {
@@ -113,7 +114,7 @@ class SARStrategy extends BaseStrategy {
                 let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
                 this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[1]);
               } else {
-                console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend);
+                // console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend);
               }
             }
           }
@@ -133,7 +134,7 @@ class SARStrategy extends BaseStrategy {
               let trigger = this.getTrigger(traceCandles, resultBollinger.uptrend);
               this.generateTradeSignals(data, resultBollinger.uptrend, trigger, signalTypes[2]);
             } else {
-              console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend, resultVWAP.crossed);
+              // console.log("crossOver", resultStochastic.crossOver, "RSI", resultRSI.positive === resultBollinger.uptrend, resultVWAP.crossed);
             }
           }
         }
@@ -155,7 +156,7 @@ class SARStrategy extends BaseStrategy {
   }
   isChoppyMarket(candles) {
     const formattedInput = formatToInput(candles);
-    formattedInput.period = 8;
+    formattedInput.period = 14;
     const results = ADX.calculate(formattedInput);
     const last = results[results.length - 1];
     return last.adx <= 20;
@@ -170,7 +171,7 @@ class SARStrategy extends BaseStrategy {
     if (!data || !data.traceCandles)
       return false;
 
-    console.log(tradeSignal.tradingSymbol);
+    logger.info(this.getSignalDetails(tradeSignal));
 
     const tm = TradeManager.getInstance();
 
@@ -207,6 +208,20 @@ class SARStrategy extends BaseStrategy {
       }
       if (!result.reversalStarted)
         return false;
+    }
+
+    const sar = new SAR(data.traceCandles);
+
+    if (tradeSignal.isBuy) {
+      if (!sar.isBreakOut(liveQuote.cmp)) {
+        logger.info(`Wait for breakout ${sar.breakOutPoint(liveQuote.cmp)}`);
+        return false;
+      }
+    } else {
+      if (!sar.isBreakDown(liveQuote.cmp)) {
+        logger.info(`Wait for breakdown ${sar.breakDownPoint(liveQuote.cmp)}`);
+        return false;
+      }
     }
 
     return true;
@@ -306,7 +321,7 @@ class SARStrategy extends BaseStrategy {
     const lastBand = bollingerBands[bollingerBands.length - 1];
     const trendReversalHappend = crossOvers.includes(true);
     const avgCandleSize = getAvgCandleSize(traceCandles);
-    const inSqueze = avgCandleSize * 2 > Math.abs(lastBand.upper - lastBand.lower);
+    const inSqueze = avgCandleSize * 3 > Math.abs(lastBand.upper - lastBand.lower);
     return {
       uptrend,
       crossOvers,

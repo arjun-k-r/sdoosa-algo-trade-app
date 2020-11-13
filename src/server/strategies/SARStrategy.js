@@ -165,10 +165,11 @@ class SARStrategy extends BaseStrategy {
     console.log("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       if ((tradeSignal.isBuy && tradeSignal.trigger < liveQuote.cmp) || (!tradeSignal.isBuy && tradeSignal.trigger > liveQuote.cmp)) {
+        tradeSignal.message = (tradeSignal.message || "") + " | Trigger already crossed, so disabling";
         tm.disableTradeSignal(tradeSignal);
-        logger.info(`Trigger already crossed, disabling ${this.getSignalDetails(tradeSignal)}`);
+        logger.info(`${tradeSignal.message} ${this.getSignalDetails(tradeSignal)}`);
+        return false;
       }
-      return false;
     }
 
     // // if (!this.confirmWithVWAP(data, tradeSignal, liveQuote)) {
@@ -177,7 +178,7 @@ class SARStrategy extends BaseStrategy {
 
     if (tradeSignal.signalBy === signalTypes[2]) {
       console.log("Check Stochastic");
-      const stochastic = new Stochastic(traceCandles);
+      const stochastic = new Stochastic(data.traceCandles);
       if (!stochastic.confirmMomentum(tradeSignal.isBuy)) {
         tradeSignal.message = (tradeSignal.message || "") + " | Momentum lost,so disabling";
         tm.disableTradeSignal(tradeSignal);
@@ -187,7 +188,6 @@ class SARStrategy extends BaseStrategy {
     }
 
     const sar = new SAR(data.traceCandles);
-
     if (tradeSignal.isBuy) {
       if (!sar.isBreakOut(liveQuote.cmp)) {
         logger.info(`Wait for breakout ${sar.breakOutPoint(liveQuote.cmp)}`);

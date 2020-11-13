@@ -33,7 +33,7 @@ module.exports = class {
         return BollingerBands.calculate(input);
     }
     near(cmp) {
-        return Math.max(cmp * .001, .05);
+        return Math.max(cmp * .003, .05);
     }
     inContactUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         return lastBand.upper < cmp || (lastBand.upper - cmp) <= this.near(cmp);
@@ -44,11 +44,11 @@ module.exports = class {
     inContactMiddleBand(cmp = this.lastCandle.close, lastBand = this.last) {
         return Math.abs(lastBand.middle - cmp) <= this.near(cmp);
     }
-    inContactMiddleUpperBand(...args) {
-        return this.inContactUpperBand.apply(this, args) || this.inContactMiddleBand.apply(this, args);
+    inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
+        return lastBand.middle < cmp || (lastBand.middle - cmp) <= this.near(cmp);
     }
-    inContactMiddleLowerBand(...args) {
-        return this.inContactLowerBand.apply(this, args) || this.inContactMiddleBand.apply(this, args);
+    inContactMiddleLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
+        return lastBand.middle > cmp || (cmp - lastBand.middle) <= this.near(cmp);
     }
     inContact(uptrend, cmp) {
         return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);

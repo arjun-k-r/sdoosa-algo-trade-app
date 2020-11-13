@@ -12,16 +12,22 @@ class SAR {
     this.calculate();
     this.clusters = this.calculateClusters();
   }
+  isHigh(i, candles = this.candles) {
+    return Math.max(...range(candles.map(c => c.high), i, 3)) === candles[i].high;
+  }
+  isLow(i, candles = this.candles) {
+    return Math.min(...range(candles.map(c => c.low), i, 3)) === candles[i].low;
+  }
   isSupport(candles, i) {
     const support = candles[i].low < candles[i - 1].low && candles[i].low < candles[i + 1].low && candles[i + 1].low < candles[i + 2].low && candles[i - 1].low < candles[i - 2].low;
     if (support)
-      return Math.min(...range(candles.map(c => c.low), i, 6)) === candles[i].low;
+      return this.isLow(i);
     return false;
   }
   isResistance(candles, i) {
     const resistance = candles[i].high > candles[i - 1].high && candles[i].high > candles[i + 1].high && candles[i + 1].high > candles[i + 2].high && candles[i - 1].high > candles[i - 2].high;
     if (resistance)
-      return Math.max(...range(candles.map(c => c.high), i, 6)) === candles[i].high;
+      return this.isHigh(i);
     return false;
   }
   getAvgCandleSize() {
@@ -60,6 +66,13 @@ class SAR {
           // if (this.isFarFromLevel(h)) {
           this.levels.push(h);
           // }
+        }
+      } else {
+        if (this.isLow(i)) {
+          this.levels.push(candles[i].low);
+        }
+        if (this.isHigh(i)) {
+          this.levels.push(candles[i].high);
         }
       }
     }

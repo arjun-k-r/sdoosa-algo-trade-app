@@ -17,6 +17,7 @@ import {
   // formatTimestampToString
 } from '../utils/utils.js';
 
+import MACD from "../indicators/MACD.js";
 import SAR from "../indicators/SAR.js";
 import ADX from "../indicators/ADX.js";
 import BollingerBands from "../indicators/BollingerBands.js";
@@ -74,7 +75,6 @@ class SARStrategy extends BaseStrategy {
       }
     });
   }
-
   findSupportAndResistance() {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
@@ -91,13 +91,16 @@ class SARStrategy extends BaseStrategy {
         console.log(volatility[bb.isVolatile() ? 0 : 1]);
 
         if (adx.isTrending()) {
+          const macd = new MACD();
           const rsi = new RSI(traceCandles);
           if (rsi.confirmMomentum(adx.isUpTrend())) {
             if (bb.isVolatile()) {
               if (bb.inContact(adx.isUpTrend())) {
                 if (adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles)) {
-                  let trigger = this.getTrigger(traceCandles, adx.isUpTrend());
-                  this.generateTradeSignals(data, adx.isUpTrend(), trigger, signalTypes[0]);
+                  if (adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum()) {
+                    let trigger = this.getTrigger(traceCandles, adx.isUpTrend());
+                    this.generateTradeSignals(data, adx.isUpTrend(), trigger, signalTypes[0]);
+                  }
                 }
               }
             } else {
@@ -105,8 +108,10 @@ class SARStrategy extends BaseStrategy {
               if (adx.isStrongTrend()) {
                 if (bb.inContact(adx.isUpTrend())) {
                   if (adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles)) {
-                    let trigger = this.getTrigger(traceCandles, adx.isUpTrend());
-                    this.generateTradeSignals(data, adx.isUpTrend(), trigger, signalTypes[1]);
+                    if (adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum()) {
+                      let trigger = this.getTrigger(traceCandles, adx.isUpTrend());
+                      this.generateTradeSignals(data, adx.isUpTrend(), trigger, signalTypes[1]);
+                    }
                   }
                 }
               }
@@ -202,26 +207,6 @@ class SARStrategy extends BaseStrategy {
 
     return true;
   };
-  // checkMACD(candles, uptrend) {
-  //   const macdInput = {
-  //     values: candles.map(c => c.close),
-  //     fastPeriod: 12,
-  //     slowPeriod: 26,
-  //     signalPeriod: 9,
-  //     SimpleMAOscillator: false,
-  //     SimpleMASignal: false
-  //   };
-  //   const output = MACD.calculate(macdInput);
-  //   const crossOverInput = output.reduce((acc, o) => {
-  //     acc.lineA.push(o.MACD);
-  //     acc.lineB.push(o.signal);
-  //     return acc;
-  //   }, { lineA: [], lineB: [] });
-  //   const crossOvers = uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
-  //   const nCrossOvers = crossOvers.slice(Math.max(crossOvers.length - 3, 0));
-  //   const crossOver = nCrossOvers[2];
-  //   return crossOver;
-  // }
   shouldPlaceTrade(tradeSignal, liveQuote) {
     if (super.shouldPlaceTrade(tradeSignal, liveQuote) === false) {
       return false;

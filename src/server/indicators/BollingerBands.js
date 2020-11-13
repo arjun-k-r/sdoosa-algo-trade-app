@@ -4,6 +4,7 @@ import {
 
 const BollingerBands = require('technicalindicators').BollingerBands;
 
+
 module.exports = class {
     constructor(candles) {
         this.candles = candles;
@@ -33,36 +34,64 @@ module.exports = class {
         return BollingerBands.calculate(input);
     }
     near(cmp) {
-        const bandWidth = this.bandWidth();
-        let x = .001;
-        if (bandWidth < .02) {
-            x = .001;
-        } else if (bandWidth < .04) {
-            x = .002;
-        } else {
-            x = .003;
-        }
+        let x = this.bandWidth() * 3.14159 * .02;
+        // console.log(x);
         return Math.max(cmp * x, .05);
     }
     inContactUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
-        return lastBand.upper < cmp || (lastBand.upper - cmp) <= this.near(cmp);
+        if (lastBand.upper < cmp)
+            return true;
+        if (this.isResistance())
+            return (lastBand.upper - cmp) <= this.near(cmp);
+        return false;
     }
     inContactLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
-        return lastBand.lower > cmp || (cmp - lastBand.lower) <= this.near(cmp);
+        if (lastBand.lower > cmp)
+            return true;
+        if (this.isSupport())
+            return (cmp - lastBand.lower) <= this.near(cmp);
+        return false;
     }
     inContactMiddleBand(cmp = this.lastCandle.close, lastBand = this.last) {
+        // console.log(lastBand.middle, cmp, this.near(cmp));
         return Math.abs(lastBand.middle - cmp) <= this.near(cmp);
     }
     inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
-        return lastBand.middle < cmp || (lastBand.middle - cmp) <= this.near(cmp);
+        if (lastBand.middle <= cmp)
+            return true;
+        if (this.isResistance("middle"))
+            return this.inContactMiddleBand(cmp);
+        return false;
     }
     inContactMiddleLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
-        return lastBand.middle > cmp || (cmp - lastBand.middle) <= this.near(cmp);
+        if (lastBand.middle >= cmp)
+            return true;
+        if (this.isSupport("middle"))
+            return this.inContactMiddleBand(cmp);
+        return false;
     }
     inContact(uptrend, cmp) {
         return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);
     }
     inContactLowerUpper(uptrend, cmp) {
         return uptrend ? this.inContactLowerBand(cmp) : this.inContactUpperBand(cmp);
+    }
+    isSupport(key = "lower") {
+        const candles = this.candles;
+
+        const x = candles[candles.length - 1].low - this.results[this.results.length - 1][key];
+        const y = candles[candles.length - 2].low - this.results[this.results.length - 2][key];
+        const z = candles[candles.length - 3].low - this.results[this.results.length - 3][key];
+
+        return x < y && y < z;
+    }
+    isResistance(key = "upper") {
+        const candles = this.candles;
+
+        const x = candles[candles.length - 1].high - this.results[this.results.length - 1][key];
+        const y = candles[candles.length - 2].high - this.results[this.results.length - 2][key];
+        const z = candles[candles.length - 3].high - this.results[this.results.length - 3][key];
+
+        return x < y && y < z;
     }
 };

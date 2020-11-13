@@ -4,6 +4,7 @@ import {
     formatToInput,
 } from '../utils/utils.js';
 
+
 const ADX = require('technicalindicators').ADX;
 
 module.exports = class {

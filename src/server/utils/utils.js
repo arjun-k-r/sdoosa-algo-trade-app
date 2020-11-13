@@ -443,6 +443,19 @@ export function getAvgCandleSize(candles) {
   return _.mean(levels);
 }
 
+export function isSideWayMarket(candles) {
+  const avg = getAvgCandleSize(candles);
+  const highes = [];
+  const lowes = [];
+  for (let i = candles.length - 6; i < candles.length - 1; i++) {
+    highes.push(candles[i].high);
+    lowes.push(candles[i].low);
+  }
+  const h = Math.max(...highes);
+  const l = Math.min(...lowes);
+  return (h - l) < avg;
+}
+
 export function isNear(trigger, cmp, allowedChangePercentage, buy) {
   const allowedChange = allowedChangePercentage / 100;
   const near = trigger * allowedChange;

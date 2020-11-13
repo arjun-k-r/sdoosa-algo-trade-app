@@ -32,6 +32,15 @@ module.exports = class {
     confirmMomentum(uptrend) {
         return uptrend ? this.longMomentum() : this.shortMomentum();
     }
+    strongLongMomentum(last = this.last) {
+        return last >= 70;
+    }
+    strongShortMomentum(last = this.last) {
+        return last <= 30;
+    }
+    confirmStrongMomentum(uptrend) {
+        return uptrend ? this.strongLongMomentum() : this.strongShortMomentum();
+    }
     calculate(candles = this.candles) {
         const inputRSI = {
             period: 8

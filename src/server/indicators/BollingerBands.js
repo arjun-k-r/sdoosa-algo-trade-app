@@ -13,12 +13,12 @@ module.exports = class {
         this.lastCandle = candles[candles.length - 1];
     }
     bandWidth(lastBand = this.last, lastCandle = this.lastCandle) {
-        return lastBand.upper - lastBand.lower;
+        return ((lastBand.upper - lastBand.lower) / getAvgCandleSize(this.candles)) / 100;
     }
     isSqueze(...args) {
         const bandWidth = this.bandWidth.apply(this, args);
         // console.log(bandWidth, getAvgCandleSize(this.candles));
-        return bandWidth < 1.5 * getAvgCandleSize(this.candles);
+        return bandWidth < .02;
     }
     isVolatile(...args) {
         return !this.isSqueze.apply(this, args);
@@ -33,7 +33,16 @@ module.exports = class {
         return BollingerBands.calculate(input);
     }
     near(cmp) {
-        return Math.max(cmp * .003, .05);
+        const bandWidth = this.bandWidth();
+        let x = .001;
+        if (bandWidth < .02) {
+            x = .001;
+        } else if (bandWidth < .04) {
+            x = .002;
+        } else {
+            x = .003;
+        }
+        return Math.max(cmp * x, .05);
     }
     inContactUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         return lastBand.upper < cmp || (lastBand.upper - cmp) <= this.near(cmp);

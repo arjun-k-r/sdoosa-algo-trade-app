@@ -15,6 +15,7 @@ module.exports = class {
         this.lastCandle = candles[candles.length - 1];
     }
     isUpTrend(cmp = this.lastCandle.close) {
+        // console.log(this.last, cmp);
         return this.last < cmp;
     }
     calculate(candles = this.candles) {

@@ -91,7 +91,7 @@ class SARStrategy extends BaseStrategy {
         console.log(volatility[bb.isVolatile() ? 0 : 1]);
 
         if (adx.isTrending()) {
-          const macd = new MACD();
+          const macd = new MACD(traceCandles);
           const rsi = new RSI(traceCandles);
           if (rsi.confirmMomentum(adx.isUpTrend())) {
             if (bb.isVolatile()) {
@@ -119,7 +119,7 @@ class SARStrategy extends BaseStrategy {
           }
         } else {
           if (bb.isVolatile()) {
-            const wvap = new VWAP(traceCandles);
+            const wvap = new VWAP(candles);
             if (bb.inContactLowerUpper(wvap.isUpTrend())) {
               const stochastic = new Stochastic(traceCandles);
               if (stochastic.confirmMomentum(wvap.isUpTrend())) {

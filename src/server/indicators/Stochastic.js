@@ -55,7 +55,8 @@ module.exports = class {
         return this.uniqueCrossOver() && this.reversalStarted() && (this.longMomentum() ? this.overSold() : this.overBrought());
     }
     confirmMomentum(uptrend) {
-        return uptrend === this.longMomentum() && this.strongCrossOver();
+        // console.log(uptrend, this.overSold(), this.overBrought());
+        return (uptrend ? this.longMomentum() : this.shortMomentum()) && this.strongCrossOver();
     }
     calculate(candles = this.candles) {
         let period = 8;

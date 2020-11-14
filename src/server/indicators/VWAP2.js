@@ -5,6 +5,8 @@ import {
     getAvgCandleSize
 } from '../utils/utils.js';
 
+const CrossUp = require('technicalindicators').CrossUp;
+const CrossDown = require('technicalindicators').CrossDown;
 const VWAP = require('technicalindicators').VWAP;
 
 module.exports = class {
@@ -45,7 +47,7 @@ module.exports = class {
         return uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
     }
 
-    nCrossOvers(n = 2) {
+    nCrossOvers(n = 3) {
         const crossOvers = this.crossOvers();
         return crossOvers.slice(Math.max(crossOvers.length - n, 0));
     }

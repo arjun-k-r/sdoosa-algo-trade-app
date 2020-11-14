@@ -33,28 +33,26 @@ module.exports = class {
         };
         return BollingerBands.calculate(input);
     }
-    near(cmp) {
-        let x = this.bandWidth() * 3.14159 * .02;
-        // console.log(x);
-        return Math.max(cmp * x, .05);
-    }
+
     inContactUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
+        const diff = lastBand.upper - lastBand.middle;
         if (lastBand.upper < cmp)
             return true;
         if (this.isResistance())
-            return (lastBand.upper - cmp) <= this.near(cmp);
+            return (lastBand.upper - cmp) <= diff / 2;
         return false;
     }
     inContactLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
+        const diff = lastBand.middle - lastBand.lower;
         if (lastBand.lower > cmp)
             return true;
         if (this.isSupport())
-            return (cmp - lastBand.lower) <= this.near(cmp);
+            return (cmp - lastBand.lower) <= diff / 2;
         return false;
     }
     inContactMiddleBand(cmp = this.lastCandle.close, lastBand = this.last) {
-        // console.log(lastBand.middle, cmp, this.near(cmp));
-        return Math.abs(lastBand.middle - cmp) <= this.near(cmp);
+        const diff = lastBand.middle < cmp ? lastBand.upper - lastBand.middle : lastBand.middle - lastBand.lower;
+        return Math.abs(lastBand.middle - cmp) <= diff / 2;
     }
     inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         if (lastBand.middle <= cmp)
@@ -83,6 +81,11 @@ module.exports = class {
         const y = candles[candles.length - 2].low - this.results[this.results.length - 2][key];
         const z = candles[candles.length - 3].low - this.results[this.results.length - 3][key];
 
+        // console.log(candles[candles.length - 1].low, this.results[this.results.length - 1][key]);
+        // console.log(candles[candles.length - 2].low, this.results[this.results.length - 2][key]);
+        // console.log(candles[candles.length - 3].low, this.results[this.results.length - 3][key]);
+        // console.log(x, y, z);
+
         return x < y && y < z;
     }
     isResistance(key = "upper") {
@@ -91,6 +94,11 @@ module.exports = class {
         const x = candles[candles.length - 1].high - this.results[this.results.length - 1][key];
         const y = candles[candles.length - 2].high - this.results[this.results.length - 2][key];
         const z = candles[candles.length - 3].high - this.results[this.results.length - 3][key];
+
+        // console.log(candles[candles.length - 1].high, this.results[this.results.length - 1][key]);
+        // console.log(andles[candles.length - 2].high, this.results[this.results.length - 2][key]);
+        // console.log(candles[candles.length - 3].high, this.results[this.results.length - 3][key]);
+        // console.log(x, y, z);
 
         return x < y && y < z;
     }

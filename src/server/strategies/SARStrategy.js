@@ -93,7 +93,7 @@ class SARStrategy extends BaseStrategy {
         const lastCandle = candles[candles.length - 1];
         const sidewayMarket = isSideWayMarket(traceCandles);
 
-        console.log(lastCandle.date.toLocaleTimeString());
+        console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
         console.log(tradingSymbol, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
         console.log("Sideway Market : ", sidewayMarket);
 
@@ -107,7 +107,7 @@ class SARStrategy extends BaseStrategy {
           if (bb.isVolatile()) {
             const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
             const isVWAPNear = vwap.isNear();
-            const uniqueCrossOver = wvap.uniqueCrossOver();
+            const uniqueCrossOver = vwap.uniqueCrossOver();
             console.log("RSI strong: ", strongMomentum);
             if (strongMomentum) {
               console.log("VWAP Not Near :", !isVWAPNear, "uniqueCrossOver :", uniqueCrossOver);

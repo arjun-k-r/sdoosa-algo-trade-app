@@ -28,6 +28,7 @@
     "react-dom": "=16.8.6",
     "request": "=2.85.0",
     "technicalindicators": "^3.1.0",
+    "trendyways": "^0.8.0",
     "upstox": "=2.0.0",
     "uuid": "=3.3.2",
     "winston": "=3.2.1"

@@ -26,6 +26,7 @@ import BollingerBands from "../indicators/BollingerBands.js";
 import RSI from "../indicators/RSI.js";
 import Stochastic from "../indicators/Stochastic.js";
 import VWAP from "../indicators/VWAP2.js";
+import ZigZag from "../indicators/ZigZag.js";
 
 import logger from '../logger/logger.js';
 import { getConfig } from '../config.js';
@@ -95,31 +96,43 @@ class SARStrategy extends BaseStrategy {
         console.log(tradingSymbol, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
         console.log("Sideway Market : ", sidewayMarket);
 
+
         const bb = new BollingerBands(traceCandles);
         if (!sidewayMarket) {
           const macd = new MACD(traceCandles);
           const rsi = new RSI(traceCandles);
-          const isVWAPNear = vwap.isNear();
-          const confirmMomentum = bb.isVolatile() ?
-            rsi.confirmStrongMomentum(adx.isUpTrend()) && !isVWAPNear :
-            rsi.confirmMomentum(adx.isUpTrend());
-          console.log("RSI : ", confirmMomentum, "VWAP near :", isVWAPNear);
+          let confirmMomentum = false;
+          console.log("Volatility : ", bb.isVolatile());
+          if (bb.isVolatile()) {
+            const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+            const isVWAPNear = vwap.isNear();
+            console.log("RSI strong: ", strongMomentum, "VWAP Not Near :", !isVWAPNear);
+            if (strongMomentum && !isVWAPNear) {
+              confirmMomentum = true;
+            }
+          } else {
+            const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+            const strongTrend = adx.isTrending();
+            console.log("RSI : ", rsiConfirm, "StrongTrend :", strongTrend);
+            if (rsiConfirm && strongTrend) {
+              confirmMomentum = true;
+            }
+          }
+
           if (confirmMomentum) {
-            const trendingOrVolatile = adx.isTrending() || bb.isVolatile();
-            console.log("Volatility : ", bb.isVolatile());
-            if (trendingOrVolatile) {
-              const touchedBB = bb.inContact(adx.isUpTrend());
-              console.log("BolingerBand : ", touchedBB);
-              if (touchedBB) {
-                const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
-                console.log("ChartPattern : ", chartPattern);
-                if (chartPattern) {
-                  const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
-                  console.log("MACD : ", macdConfirm);
-                  if (macdConfirm) {
-                    let trigger = this.getTrigger(traceCandles, adx.isUpTrend());
-                    this.generateTradeSignals(data, adx.isUpTrend(), trigger, signalTypes[bb.isVolatile() ? 0 : 1]);
-                  }
+            const touchedBB = bb.inContact(adx.isUpTrend());
+            console.log("BolingerBand : ", touchedBB);
+            if (touchedBB) {
+              const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
+              console.log("ChartPattern : ", chartPattern);
+              if (chartPattern) {
+                const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
+                console.log("MACD : ", macdConfirm);
+                if (macdConfirm) {
+                  const zigzag = new ZigZag(traceCandles, 3);
+                  const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
+                  if (zigzagConfirm)
+                    this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1]);
                 }
               }
             }
@@ -165,7 +178,7 @@ class SARStrategy extends BaseStrategy {
   }
   findBreakPoint(candles, value, uptrend) {
     const sar = new SAR(candles);
-    return sar.mostNearLevel(value, uptrend);
+    return sar.nextNearestLevel(uptrend, value);
   }
   confirmTrade(tradeSignal, liveQuote) {
     const NEAR = 0.1;

@@ -489,6 +489,18 @@ export function formatToInput(candles) {
   return result;
 }
 
+export function formatToTrendWaysInput(candles) {
+  return candles.map(c => {
+    return {
+      h: c.high,
+      l: c.low,
+      c: c.close,
+      o: c.open,
+      v: c.volume
+    };
+  });
+}
+
 export function soundAlert(n = 10) {
   console.log("********* Sound alert *************");
   console.log("\x07");
@@ -500,3 +512,9 @@ export function soundAlert(n = 10) {
   }, 300);
 }
 
+export function closest(arr, goal) {
+  if (arr.length)
+    return arr.reduce(function (prev, curr) {
+      return (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev);
+    });
+}

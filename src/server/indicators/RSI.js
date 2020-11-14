@@ -29,7 +29,10 @@ module.exports = class {
     shortMomentum(last = this.last) {
         return last <= 40;
     }
-    confirmMomentum(uptrend) {
+    confirmMomentum(uptrend, cap = false) {
+        if (cap)
+            if (uptrend ? this.overBrought() : this.overSold())
+                return false;
         return uptrend ? this.longMomentum() : this.shortMomentum();
     }
     strongLongMomentum(last = this.last) {
@@ -38,7 +41,10 @@ module.exports = class {
     strongShortMomentum(last = this.last) {
         return last <= 30;
     }
-    confirmStrongMomentum(uptrend) {
+    confirmStrongMomentum(uptrend, cap = false) {
+        if (cap)
+            if (uptrend ? this.overBrought() : this.overSold())
+                return false;
         return uptrend ? this.strongLongMomentum() : this.strongShortMomentum();
     }
     calculate(candles = this.candles) {

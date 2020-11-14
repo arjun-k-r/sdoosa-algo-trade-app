@@ -2,13 +2,15 @@
   Author: Gokul T
 */
 
-import { createClustors, range, getAvgCandleSize } from "../utils/utils";
+import { createClustors, range, getAvgCandleSize, closest } from "../utils/utils";
+
 
 class SAR {
   constructor(candles) {
     this.candles = candles;
     this.avgCandleSize = getAvgCandleSize(candles);
     this.levels = [];
+    this.lastCandle = candles[candles.length - 1];
     this.calculate();
     this.clusters = this.calculateClusters();
   }
@@ -33,18 +35,23 @@ class SAR {
   getAvgCandleSize() {
     return this.avgCandleSize;
   }
-  isFarFromLevel(l) {
+  isFarFromLevel(l = this.lastCandle.close) {
     return this.nearLevels(l).length === 0;
   }
-  nearLevels(l) {
+  nearLevels(l = this.lastCandle.close) {
     return this.levels.filter(x => Math.abs(l - x) < this.avgCandleSize);
   }
-  mostNearLevel(l, up) {
+  nearestLevel(l = this.lastCandle.close) {
+    const filtered = this.nearLevels(l).filter(x => Math.abs(l - x) < this.avgCandleSize);
+    return closest(filtered, l);
+  }
+  nextNearestLevel(up, l = this.lastCandle.close) {
     const filtered = this.nearLevels(l).filter(x => up ? x >= l : x <= l);
-    if (filtered.length) {
-      return filtered[up ? filtered.length - 1 : 0];
-    }
-    return null;
+    return closest(filtered, l);
+  }
+  isLevelBreak(up, cmp = this.lastCandle.close) {
+    const breakLevel = this.nearestLevel(cmp);
+    return breakLevel && (up ? (cmp >= breakLevel) : (cmp <= breakLevel));
   }
   calculate() {
     const candles = this.candles;
@@ -87,7 +94,7 @@ class SAR {
   calculateClusters() {
     return createClustors(this.getLevels(), this.avgCandleSize).map(c => [c[0], c[c.length - 1]]);
   }
-  currentSupportAndResisitance(cmp) {
+  currentSupportAndResisitance(cmp = this.lastCandle.close) {
     const clusters = this.calculateClusters();
     let s, r;
     for (let i = 0; i < clusters.length; i++) {
@@ -119,23 +126,39 @@ class SAR {
   getClusters() {
     return this.clusters;
   }
-  breakOutPoint(cmp) {
+  nearestBreakOutPoint(cmp = this.lastCandle.close) {
     const clusters = this.getClusters();
-    const filtered = clusters.map(c => c[1]).filter(x => Math.abs(cmp - x) < this.avgCandleSize);
-    return filtered[filtered.length - 1];
+    const filtered = clusters.map(c => c[1])
+      .filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return closest(filtered, cmp);
   }
-  breakDownPoint(cmp) {
+  nearestBreakDownPoint(cmp = this.lastCandle.close) {
     const clusters = this.getClusters();
-    const filtered = clusters.map(c => c[0]).filter(x => Math.abs(cmp - x) < this.avgCandleSize);
-    return filtered[0];
+    const filtered = clusters.map(c => c[0])
+      .filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return closest(filtered, cmp);
   }
-  isBreakOut(cmp) {
-    const breakOutPoint = this.breakOutPoint(cmp);
-    return breakOutPoint && cmp > breakOutPoint;
+  nextBreakOutPoint(cmp = this.lastCandle.close) {
+    const clusters = this.getClusters();
+    const filtered = clusters
+      .map(c => c[1]).filter(x => x >= cmp)
+      .filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return closest(filtered, cmp);
   }
-  isBreakDown(cmp) {
-    const breakDownPoint = this.breakDownPoint(cmp);
-    return breakDownPoint && cmp < breakDownPoint;
+  nextBeakDownPoint(cmp = this.lastCandle.close) {
+    const clusters = this.getClusters();
+    const filtered = clusters.map(c => c[0])
+      .filter(x => x <= cmp)
+      .filter(x => Math.abs(cmp - x) < this.avgCandleSize);
+    return closest(filtered, cmp);
+  }
+  isBreakOut(cmp = this.lastCandle.close) {
+    const breakOutPoint = this.nearestBreakOutPoint(cmp);
+    return breakOutPoint && (cmp >= breakOutPoint);
+  }
+  isBreakDown(cmp = this.lastCandle.close) {
+    const breakDownPoint = this.nearestBreakDownPoint(cmp);
+    return breakDownPoint && (cmp <= breakDownPoint);
   }
 }
 

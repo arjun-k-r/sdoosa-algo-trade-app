@@ -82,6 +82,8 @@ class SARStrategy extends BaseStrategy {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
       if (data && data.traceCandles && data.traceCandles.length) {
+        console.log("=========================================================================================");
+
         const traceCandles = data.traceCandles;
         const candles = data.candles || traceCandles.slice(traceCandles.length - 75);
 
@@ -91,7 +93,6 @@ class SARStrategy extends BaseStrategy {
         const lastCandle = candles[candles.length - 1];
         const sidewayMarket = isSideWayMarket(traceCandles);
 
-        console.log("=========================================================================");
         console.log(lastCandle.date.toLocaleTimeString());
         console.log(tradingSymbol, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
         console.log("Sideway Market : ", sidewayMarket);

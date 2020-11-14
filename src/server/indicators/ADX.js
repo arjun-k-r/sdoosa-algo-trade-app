@@ -25,7 +25,7 @@ module.exports = class {
     }
     calculate(candles = this.candles) {
         const formattedInput = formatToInput(candles);
-        formattedInput.period = 14;
+        formattedInput.period = 8;
         return ADX.calculate(formattedInput);
     }
 };

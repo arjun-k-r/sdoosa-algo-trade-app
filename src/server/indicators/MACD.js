@@ -8,6 +8,12 @@ module.exports = class {
         const results = this.results;
         this.last = results[results.length - 1];
     }
+    longMomentum(last = this.last) {
+        return last.MACD > last.signal;
+    }
+    shortMomentum(last = this.last) {
+        return last.MACD < last.signal;
+    }
     crossOverInput() {
         const results = this.results;
         return results.reduce((acc, o) => {
@@ -15,12 +21,6 @@ module.exports = class {
             acc.lineB.push(o.signal);
             return acc;
         }, { lineA: [], lineB: [] });
-    }
-    longMomentum(last = this.last) {
-        return last.MACD > last.signal;
-    }
-    shortMomentum(last = this.last) {
-        return last.MACD < last.signal;
     }
     crossOvers(last = this.last) {
         const uptrend = this.longMomentum();

@@ -107,9 +107,13 @@ class SARStrategy extends BaseStrategy {
           if (bb.isVolatile()) {
             const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
             const isVWAPNear = vwap.isNear();
-            console.log("RSI strong: ", strongMomentum, "VWAP Not Near :", !isVWAPNear);
-            if (strongMomentum && !isVWAPNear) {
-              confirmMomentum = true;
+            const uniqueCrossOver = wvap.uniqueCrossOver();
+            console.log("RSI strong: ", strongMomentum);
+            if (strongMomentum) {
+              console.log("VWAP Not Near :", !isVWAPNear, "uniqueCrossOver :", uniqueCrossOver);
+              if (!isVWAPNear || uniqueCrossOver) {
+                confirmMomentum = true;
+              }
             }
           } else {
             const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
@@ -216,18 +220,21 @@ class SARStrategy extends BaseStrategy {
       }
     }
 
-    const sar = new SAR(data.traceCandles);
-    if (tradeSignal.isBuy) {
-      if (!sar.isBreakOut(liveQuote.cmp)) {
-        logger.info(`Wait for breakout ${sar.breakOutPoint(liveQuote.cmp)}`);
-        return false;
-      }
-    } else {
-      if (!sar.isBreakDown(liveQuote.cmp)) {
-        logger.info(`Wait for breakdown ${sar.breakDownPoint(liveQuote.cmp)}`);
-        return false;
+    if (tradeSignal.signalBy === signalTypes[2]) {
+      const sar = new SAR(data.traceCandles);
+      if (tradeSignal.isBuy) {
+        if (!sar.isBreakOut(liveQuote.cmp)) {
+          logger.info(`Wait for breakout ${sar.breakOutPoint(liveQuote.cmp)}`);
+          return false;
+        }
+      } else {
+        if (!sar.isBreakDown(liveQuote.cmp)) {
+          logger.info(`Wait for breakdown ${sar.breakDownPoint(liveQuote.cmp)}`);
+          return false;
+        }
       }
     }
+
 
     return true;
   };

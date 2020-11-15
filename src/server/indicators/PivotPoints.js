@@ -10,10 +10,16 @@ module.exports = class {
         this.candles = candles;
         this.results = this.calculate();
         const results = this.results;
+        this.lastCandle = candles[candles.length - 1];
         this.last = results[results.length - 1];
     }
     calculate(candles = this.candles) {
         const formattedInput = formatToTrendWaysInput(candles);
         return tw.floorPivots(formattedInput);
+    }
+    process() {
+        const lastCandle = this.lastCandle;
+        console.log(this.last);
+        return lastCandle;
     }
 };

@@ -119,9 +119,8 @@ class SARStrategy extends BaseStrategy {
             console.log("Strong Trend : ", adx.isStrongTrend());
             if (adx.isStrongTrend()) {
               const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-              const strongTrend = adx.isTrending();
-              console.log("RSI : ", rsiConfirm, "StrongTrend :", strongTrend);
-              if (rsiConfirm && strongTrend) {
+              console.log("RSI : ", rsiConfirm);
+              if (rsiConfirm) {
                 confirmMomentum = true;
               }
             }

@@ -1,6 +1,6 @@
-import {
-    getAvgCandleSize
-} from '../utils/utils.js';
+// import {
+//     getAvgCandleSize
+// } from '../utils/utils.js';
 
 const BollingerBands = require('technicalindicators').BollingerBands;
 
@@ -14,12 +14,13 @@ module.exports = class {
         this.lastCandle = candles[candles.length - 1];
     }
     bandWidth(lastBand = this.last, lastCandle = this.lastCandle) {
-        return ((lastBand.upper - lastBand.lower) / getAvgCandleSize(this.candles)) / 100;
+        return ((lastBand.upper - lastBand.lower) / lastBand.middle);
+        // return ((lastBand.upper - lastBand.lower) / getAvgCandleSize(this.candles)) / 100;
     }
     isSqueze(...args) {
         const bandWidth = this.bandWidth.apply(this, args);
         // console.log(bandWidth, getAvgCandleSize(this.candles));
-        return bandWidth < .02;
+        return bandWidth <= 0.01;
     }
     isVolatile(...args) {
         return !this.isSqueze.apply(this, args);

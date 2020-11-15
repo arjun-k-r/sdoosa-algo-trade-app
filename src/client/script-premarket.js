@@ -13,6 +13,7 @@
 
     async function preOpenMarket() {
         const response = await fetch(
+            // "https://www.nseindia.com/api/market-data-pre-open?key=NIFTY",
             "https://www.nseindia.com/api/market-data-pre-open?key=FO",
             {
                 headers: {

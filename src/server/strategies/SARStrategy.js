@@ -94,7 +94,7 @@ class SARStrategy extends BaseStrategy {
         const sidewayMarket = isSideWayMarket(traceCandles);
 
         console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
-        console.log(tradingSymbol, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
+        console.log(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
         console.log("Sideway Market : ", sidewayMarket);
 
 

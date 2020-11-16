@@ -107,13 +107,20 @@ class SARStrategy extends BaseStrategy {
             console.log("Volatility : ", bb.isVolatile());
             if (bb.isVolatile()) {
               const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-              const isVWAPNear = vwap.isNear();
-              const isCrossOver = vwap.isCrossOver();
               console.log("RSI strong: ", strongMomentum);
               if (strongMomentum) {
-                console.log("VWAP Near :", isVWAPNear, "vwap isCrossOver :", isCrossOver);
-                if (!isVWAPNear || isCrossOver) {
-                  confirmMomentum = true;
+                console.log("VWAP isCrossOver :", vwap.isCrossOver());
+                if (vwap.isCrossOver()) {
+                  if (adx.isTrending() && !adx.isStrongTrend())
+                    confirmMomentum = true;
+                } else {
+                  console.log("Strong Trend : ", adx.isStrongTrend());
+                  if (adx.isStrongTrend()) {
+                    // console.log("VWAP Near :", vwap.isNear());
+                    // if (!vwap.isNear()) {
+                    confirmMomentum = true;
+                    // }
+                  }
                 }
               }
             } else {

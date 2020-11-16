@@ -19,10 +19,13 @@ module.exports = class {
         return last.mdi < last.pdi;
     }
     isTrending(last = this.last) {
-        return last.adx > 20;
+        return last.adx > 25;
     }
     isStrongTrend(last = this.last) {
-        return last.adx > 35;
+        return last.adx > 50;
+    }
+    isVeryStrongTrend(last = this.last) {
+        return last.adx > 75;
     }
     crossOverInput() {
         const results = this.results;

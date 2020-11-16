@@ -96,67 +96,77 @@ class SARStrategy extends BaseStrategy {
         console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
         console.log(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
         console.log("Sideway Market : ", sidewayMarket);
-
-
-        const bb = new BollingerBands(traceCandles);
-        if (!sidewayMarket) {
-          const macd = new MACD(traceCandles);
-          const rsi = new RSI(traceCandles);
-          let confirmMomentum = false;
-          console.log("Volatility : ", bb.isVolatile());
-          if (bb.isVolatile()) {
-            const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-            const isVWAPNear = vwap.isNear();
-            const isCrossOver = vwap.isCrossOver();
-            console.log("RSI strong: ", strongMomentum);
-            if (strongMomentum) {
-              console.log("VWAP Near :", isVWAPNear, "isCrossOver :", isCrossOver);
-              if (!isVWAPNear || isCrossOver) {
-                confirmMomentum = true;
+        const bullishCandle = lastCandle.close > lastCandle.open;
+        console.log("BullishCandle : ", bullishCandle);
+        if (bullishCandle === adx.isUpTrend()) {
+          const bb = new BollingerBands(traceCandles);
+          if (!sidewayMarket) {
+            const macd = new MACD(traceCandles);
+            const rsi = new RSI(traceCandles);
+            let confirmMomentum = false;
+            console.log("Volatility : ", bb.isVolatile());
+            if (bb.isVolatile()) {
+              const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+              const isVWAPNear = vwap.isNear();
+              const isCrossOver = vwap.isCrossOver();
+              console.log("RSI strong: ", strongMomentum);
+              if (strongMomentum) {
+                console.log("VWAP Near :", isVWAPNear, "vwap isCrossOver :", isCrossOver);
+                if (!isVWAPNear || isCrossOver) {
+                  confirmMomentum = true;
+                }
               }
-            }
-          } else {
-            console.log("Strong Trend : ", adx.isStrongTrend());
-            if (adx.isStrongTrend()) {
-              const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-              console.log("RSI : ", rsiConfirm);
-              if (rsiConfirm) {
-                confirmMomentum = true;
-              }
-            }
-          }
-
-          if (confirmMomentum) {
-            const touchedBB = bb.inContact(adx.isUpTrend());
-            console.log("BolingerBand : ", touchedBB);
-            if (touchedBB) {
-              const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
-              console.log("ChartPattern : ", chartPattern);
-              if (chartPattern) {
-                const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
-                console.log("MACD : ", macdConfirm);
-                if (macdConfirm) {
-                  const zigzag = new ZigZag(traceCandles, 3);
-                  const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
-                  if (zigzagConfirm)
-                    this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1]);
+            } else {
+              console.log("Strong Trend : ", adx.isStrongTrend());
+              if (adx.isStrongTrend()) {
+                console.log("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
+                if (!adx.uniqueCrossOver(1)) {
+                  const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+                  console.log("RSI : ", rsiConfirm);
+                  if (rsiConfirm) {
+                    confirmMomentum = true;
+                  }
                 }
               }
             }
-          }
-        } else {
-          console.log("Strong Trend : ", adx.isStrongTrend());
-          console.log("Volatility : ", bb.isVolatile());
-          if (adx.isStrongTrend() && bb.isVolatile()) {
-            const stochastic = new Stochastic(traceCandles);
-            const confirmTrend = vwap.isUpTrend() === adx.isUpTrend();
-            console.log("WVAP Confirm : ", confirmTrend);
-            if (confirmTrend) {
-              const confirmMomentum = stochastic.confirmMomentum(vwap.isUpTrend());
-              console.log("Stochastic : ", confirmMomentum);
-              if (confirmMomentum) {
-                let trigger = this.getTrigger(traceCandles, vwap.isUpTrend());
-                this.generateTradeSignals(data, vwap.isUpTrend(), trigger, signalTypes[2]);
+
+            if (confirmMomentum) {
+              const touchedBB = bb.inContact(adx.isUpTrend());
+              console.log("BolingerBand : ", touchedBB);
+              if (touchedBB) {
+                const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
+                console.log("ChartPattern : ", chartPattern);
+                if (chartPattern) {
+                  const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
+                  console.log("MACD : ", macdConfirm);
+                  if (macdConfirm) {
+                    const zigzag = new ZigZag(traceCandles, 3);
+                    const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
+                    if (zigzagConfirm)
+                      this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1]);
+                  }
+                }
+              }
+            }
+
+          } else {
+            console.log("Strong Trend : ", adx.isStrongTrend());
+            if (adx.isStrongTrend()) {
+              console.log("Volatility : ", bb.isVolatile());
+
+              if (bb.isVolatile()) {
+                const stochastic = new Stochastic(traceCandles);
+                const confirmTrend = vwap.isUpTrend() === adx.isUpTrend();
+                console.log("WVAP Confirm : ", confirmTrend);
+                if (confirmTrend) {
+                  const confirmMomentum = stochastic.confirmMomentum(vwap.isUpTrend());
+                  console.log("Stochastic : ", confirmMomentum);
+                  if (confirmMomentum) {
+                    let trigger = this.getTrigger(traceCandles, vwap.isUpTrend());
+                    this.generateTradeSignals(data, vwap.isUpTrend(), trigger, signalTypes[2]);
+                  }
+                }
+
               }
             }
           }

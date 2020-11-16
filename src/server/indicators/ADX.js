@@ -4,7 +4,8 @@ import {
     formatToInput,
 } from '../utils/utils.js';
 
-
+const CrossUp = require('technicalindicators').CrossUp;
+const CrossDown = require('technicalindicators').CrossDown;
 const ADX = require('technicalindicators').ADX;
 
 module.exports = class {
@@ -22,6 +23,28 @@ module.exports = class {
     }
     isStrongTrend(last = this.last) {
         return last.adx > 35;
+    }
+    crossOverInput() {
+        const results = this.results;
+        const uptrend = this.isUpTrend();
+        const a = uptrend ? "pdi" : "mdi", b = uptrend ? "mdi" : "pdi";
+        return results.reduce((acc, o) => {
+            acc.lineA.push(o[a]);
+            acc.lineB.push(o[b]);
+            return acc;
+        }, { lineA: [], lineB: [] });
+    }
+    crossOvers(last = this.last) {
+        const uptrend = this.isUpTrend();
+        const crossOverInput = this.crossOverInput();
+        return uptrend ? CrossUp.calculate(crossOverInput) : CrossDown.calculate(crossOverInput);
+    }
+    nCrossOvers(n = 3) {
+        const crossOvers = this.crossOvers();
+        return crossOvers.slice(Math.max(crossOvers.length - n, 0));
+    }
+    uniqueCrossOver(n) {
+        return this.nCrossOvers(n).filter(c => c).length === 1;
     }
     calculate(candles = this.candles) {
         const formattedInput = formatToInput(candles);

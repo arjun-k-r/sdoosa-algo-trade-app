@@ -15,7 +15,12 @@ module.exports = class {
         const results = this.results;
         this.last = results[results.length - 1];
     }
-
+    longMomentum(last = this.last) {
+        return last.k > last.d;
+    }
+    shortMomentum(last = this.last) {
+        return last.k < last.d;
+    }
     crossOverInput() {
         const results = this.results;
         return results.reduce((acc, o) => {
@@ -23,12 +28,6 @@ module.exports = class {
             acc.lineB.push(o.d);
             return acc;
         }, { lineA: [], lineB: [] });
-    }
-    longMomentum(last = this.last) {
-        return last.k > last.d;
-    }
-    shortMomentum(last = this.last) {
-        return last.k < last.d;
     }
     crossOvers(last = this.last) {
         const uptrend = this.longMomentum();

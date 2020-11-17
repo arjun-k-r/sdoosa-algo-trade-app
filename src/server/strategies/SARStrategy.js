@@ -114,8 +114,8 @@ class SARStrategy extends BaseStrategy {
                   if (adx.isTrending() && !adx.isStrongTrend())
                     confirmMomentum = true;
                 } else {
-                  console.log("Strong Trend : ", adx.isStrongTrend());
-                  if (adx.isStrongTrend()) {
+                  console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
+                  if (adx.isStrongTrendGrowing()) {
                     // console.log("VWAP Near :", vwap.isNear());
                     // if (!vwap.isNear()) {
                     confirmMomentum = true;
@@ -124,8 +124,8 @@ class SARStrategy extends BaseStrategy {
                 }
               }
             } else {
-              console.log("Strong Trend : ", adx.isStrongTrend());
-              if (adx.isStrongTrend()) {
+              console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
+              if (adx.isStrongTrendGrowing()) {
                 console.log("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
                 if (!adx.uniqueCrossOver(1)) {
                   const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
@@ -157,8 +157,8 @@ class SARStrategy extends BaseStrategy {
             }
 
           } else {
-            console.log("Strong Trend : ", adx.isStrongTrend());
-            if (adx.isStrongTrend()) {
+            console.log("Strong Trend Growing : ", adx.isStrongTrendGrowing());
+            if (adx.isStrongTrendGrowing()) {
               console.log("Volatility : ", bb.isVolatile());
 
               if (bb.isVolatile()) {

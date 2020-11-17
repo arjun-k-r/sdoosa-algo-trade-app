@@ -27,6 +27,16 @@ module.exports = class {
     isVeryStrongTrend(last = this.last) {
         return last.adx > 75;
     }
+    isStrongTrendGrowing() {
+        return this.isStrongTrend() && this.isReversalStarted();
+    }
+    isReversalStarted() {
+        const results = this.results;
+        const nResults = results.slice(Math.max(results.length - 3, 0));
+        const arr = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
+        const rev = arr[0] > arr[1] && arr[1] > arr[2];
+        return !rev;
+    }
     crossOverInput() {
         const results = this.results;
         const uptrend = this.isUpTrend();

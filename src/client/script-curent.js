@@ -1,11 +1,20 @@
 (function start() {
 
+    const min = 100, max = 5000;
 
-    return processPreOpenMarket();
+    return processCurrentMarket();
 
-    async function processPreOpenMarket() {
+    async function processCurrentMarket() {
         let result = await currentMarket();
-        return result.data.sort((a, b) => {
+        return result.data.filter(a => {
+            if (min && a.lastPrice < min) {
+                return false;
+            }
+            if (max && a.lastPrice > max) {
+                return false;
+            }
+            return true;
+        }).sort((a, b) => {
             return Math.abs(b.pChange) - Math.abs(a.pChange);
         });
     }

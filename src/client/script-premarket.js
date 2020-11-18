@@ -1,11 +1,19 @@
 (function start() {
-
+    const min = 100, max = 5000;
 
     return processPreOpenMarket();
 
     async function processPreOpenMarket() {
         let result = await preOpenMarket();
-        return result.data.sort((a, b) => {
+        return result.data.filter(a => {
+            if (min && a.lastPrice < min) {
+                return false;
+            }
+            if (max && a.lastPrice > max) {
+                return false;
+            }
+            return true;
+        }).sort((a, b) => {
             return Math.abs(b.metadata.pChange) - Math.abs(a.metadata.pChange);
         });
     }

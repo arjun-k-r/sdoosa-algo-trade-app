@@ -22,10 +22,10 @@ module.exports = class {
         return last.adx > 25;
     }
     isStrongTrend(last = this.last) {
-        return last.adx > 50;
+        return last.adx > 40;
     }
     isVeryStrongTrend(last = this.last) {
-        return last.adx > 75;
+        return last.adx > 60;
     }
     isStrongTrendGrowing() {
         return this.isStrongTrend() && this.isReversalStarted();
@@ -34,8 +34,10 @@ module.exports = class {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));
         const arr = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
+        const arr2 = nResults.map(r => r.adx);
         const rev = arr[0] > arr[1] && arr[1] > arr[2];
-        return !rev;
+        const rev2 = arr2[0] > arr2[1] && arr2[1] > arr2[2];
+        return !rev && !rev2;
     }
     crossOverInput() {
         const results = this.results;
@@ -61,7 +63,7 @@ module.exports = class {
     }
     calculate(candles = this.candles) {
         const formattedInput = formatToInput(candles);
-        formattedInput.period = 8;
+        formattedInput.period = 14;
         return ADX.calculate(formattedInput);
     }
 };

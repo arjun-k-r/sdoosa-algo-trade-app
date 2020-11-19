@@ -60,9 +60,9 @@ class SARStrategy extends BaseStrategy {
     if (this.maxTradesReached) {
       return Promise.resolve();
     }
-    console.log("process started");
+    // console.log("process started");
     return this.fetchTraceCandlesHistory().then(() => {
-      console.log("traced candle history");
+      // console.log("traced candle history");
 
       if (!config.sandboxTesting) {
         const now = new Date();
@@ -82,39 +82,37 @@ class SARStrategy extends BaseStrategy {
     _.each(this.stocks, tradingSymbol => {
       const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
       if (data && data.traceCandles && data.traceCandles.length) {
-        console.log("=========================================================================================");
+        // console.log("=========================================================================================");
 
         const traceCandles = data.traceCandles;
         const candles = data.candles || traceCandles.slice(traceCandles.length - 75);
 
         const adx = new ADX(traceCandles);
         const vwap = new VWAP(candles);
-
         const lastCandle = candles[candles.length - 1];
         const sidewayMarket = isSideWayMarket(traceCandles);
-
-        console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
-        console.log(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
-        console.log("Sideway Market : ", sidewayMarket);
+        // console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
+        // console.log(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
+        // console.log("Sideway Market : ", sidewayMarket);
         const bullishCandle = lastCandle.close > lastCandle.open;
-        console.log("BullishCandle : ", bullishCandle);
+        // console.log("BullishCandle : ", bullishCandle);
         if (bullishCandle === adx.isUpTrend()) {
           const bb = new BollingerBands(traceCandles);
           if (!sidewayMarket) {
             const macd = new MACD(traceCandles);
             const rsi = new RSI(traceCandles);
             let confirmMomentum = false;
-            console.log("Volatility : ", bb.isVolatile());
+            // console.log("Volatility : ", bb.isVolatile());
             if (bb.isVolatile()) {
               const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-              console.log("RSI strong: ", strongMomentum);
+              // console.log("RSI strong: ", strongMomentum);
               if (strongMomentum) {
-                console.log("VWAP isCrossOver :", vwap.isCrossOver());
+                // console.log("VWAP isCrossOver :", vwap.isCrossOver());
                 if (vwap.isCrossOver()) {
                   if (adx.isTrending() && !adx.isStrongTrend())
                     confirmMomentum = true;
                 } else {
-                  console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
+                  // console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
                   if (adx.isStrongTrendGrowing()) {
                     // console.log("VWAP Near :", vwap.isNear());
                     // if (!vwap.isNear()) {
@@ -124,12 +122,12 @@ class SARStrategy extends BaseStrategy {
                 }
               }
             } else {
-              console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
+              // console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
               if (adx.isStrongTrendGrowing()) {
-                console.log("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
+                // console.log("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
                 if (!adx.uniqueCrossOver(1)) {
                   const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-                  console.log("RSI : ", rsiConfirm);
+                  // console.log("RSI : ", rsiConfirm);
                   if (rsiConfirm) {
                     confirmMomentum = true;
                   }
@@ -139,16 +137,17 @@ class SARStrategy extends BaseStrategy {
 
             if (confirmMomentum) {
               const touchedBB = bb.inContact(adx.isUpTrend());
-              console.log("BolingerBand : ", touchedBB);
+              // console.log("BolingerBand : ", touchedBB);
               if (touchedBB) {
                 const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
-                console.log("ChartPattern : ", chartPattern);
+                // console.log("ChartPattern : ", chartPattern);
                 if (chartPattern) {
                   const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
-                  console.log("MACD : ", macdConfirm);
+                  // console.log("MACD : ", macdConfirm);
                   if (macdConfirm) {
                     const zigzag = new ZigZag(traceCandles, 3);
                     const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
+                    // console.log("ZigZag confirm : ", zigzagConfirm);
                     if (zigzagConfirm)
                       this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1]);
                   }
@@ -157,23 +156,21 @@ class SARStrategy extends BaseStrategy {
             }
 
           } else {
-            console.log("Strong Trend Growing : ", adx.isStrongTrendGrowing());
+            // console.log("Strong Trend Growing : ", adx.isStrongTrendGrowing());
             if (adx.isStrongTrendGrowing()) {
-              console.log("Volatility : ", bb.isVolatile());
-
+              // console.log("Volatility : ", bb.isVolatile());
               if (bb.isVolatile()) {
                 const stochastic = new Stochastic(traceCandles);
                 const confirmTrend = vwap.isUpTrend() === adx.isUpTrend();
-                console.log("WVAP Confirm : ", confirmTrend);
+                // console.log("WVAP Confirm : ", confirmTrend);
                 if (confirmTrend) {
                   const confirmMomentum = stochastic.confirmMomentum(vwap.isUpTrend());
-                  console.log("Stochastic : ", confirmMomentum);
+                  // console.log("Stochastic : ", confirmMomentum);
                   if (confirmMomentum) {
                     let trigger = this.getTrigger(traceCandles, vwap.isUpTrend());
                     this.generateTradeSignals(data, vwap.isUpTrend(), trigger, signalTypes[2]);
                   }
                 }
-
               }
             }
           }
@@ -214,7 +211,7 @@ class SARStrategy extends BaseStrategy {
 
     const tm = TradeManager.getInstance();
 
-    console.log("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
+    // console.log("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       if ((tradeSignal.isBuy && tradeSignal.trigger < liveQuote.cmp) || (!tradeSignal.isBuy && tradeSignal.trigger > liveQuote.cmp)) {
         tradeSignal.message = (tradeSignal.message || "") + " | Trigger already crossed, so disabling";
@@ -229,7 +226,7 @@ class SARStrategy extends BaseStrategy {
     // // }
 
     if (tradeSignal.signalBy === signalTypes[2]) {
-      console.log("Check Stochastic");
+      // console.log("Check Stochastic");
       const stochastic = new Stochastic(data.traceCandles);
       if (!stochastic.confirmMomentum(tradeSignal.isBuy)) {
         tradeSignal.message = (tradeSignal.message || "") + " | Momentum lost,so disabling";

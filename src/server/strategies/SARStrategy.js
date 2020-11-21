@@ -49,10 +49,9 @@ const signalTypes = [
   markets[1] + "/" + momentums[1] + "/" + trendConfirmations[1]
 ];
 
-const backTesting = true;
 
 function consoleLog(...args) {
-  if (config.sandboxTesting && !backTesting) {
+  if (config.sandboxTesting && !config.backTesting) {
     console.log.apply(null, args);
   }
 }
@@ -86,22 +85,32 @@ class SARStrategy extends BaseStrategy {
           if (data && data.traceCandles && data.traceCandles.length) {
             const traceCandles = data.traceCandles;
             const candles = data.candles;
-            console.log(tradingSymbol);
             if (traceCandles && traceCandles.length && candles && candles.length) {
-              if (backTesting) {
-                for (let i = 0; i < candles.length; i++) {
-                  const sliced = candles.slice(0, i + 1);
-                  this.findSupportAndResistance(tradingSymbol, sliced, [].concat(data.traceCandlesPrevDays, sliced), data);
-                }
-              } else {
-                this.findSupportAndResistance(tradingSymbol, candles, traceCandles, data);
-              }
+              this.findSupportAndResistance(tradingSymbol, candles, traceCandles, data);
             }
           }
         });
       } catch (err) {
         console.error("findSupportAndResistance", err);
       }
+    });
+  }
+  backTesting() {
+    return this.fetchTraceCandlesHistory().then(() => {
+      _.each(this.stocks, tradingSymbol => {
+        const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
+        if (data && data.traceCandles && data.traceCandles.length) {
+          const traceCandles = data.traceCandles;
+          const candles = data.candles;
+          console.log(tradingSymbol);
+          if (traceCandles && traceCandles.length && candles && candles.length) {
+            for (let i = 0; i < candles.length; i++) {
+              const sliced = candles.slice(0, i + 1);
+              this.findSupportAndResistance(tradingSymbol, sliced, [].concat(data.traceCandlesPrevDays, sliced), data);
+            }
+          }
+        }
+      });
     });
   }
   findSupportAndResistance(tradingSymbol, candles, traceCandles, data) {
@@ -306,7 +315,7 @@ class SARStrategy extends BaseStrategy {
   }
 
   generateTradeSignals(data, longPosition, price, signalBy, lastCandle) {
-    if (backTesting) {
+    if (config.backTesting) {
       logger.info(`
       ${this.name}: ${data.tradingSymbol} ${longPosition ? "LONG" : "SHORT"} 
       trade signal generated for @ ${price} 

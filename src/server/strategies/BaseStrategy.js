@@ -24,6 +24,8 @@ import Upstox from '../brokers/upstox/Upstox.js';
 const config = getConfig();
 const strategies = getStrategies();
 
+const skipDate = 0;
+
 class BaseStrategy {
 
   constructor(name) {
@@ -31,9 +33,8 @@ class BaseStrategy {
 
     this.strategy = _.find(strategies, s => s.name === name);
     if (this.strategy) {
-
-      logger.info(`---- strategy ${this.name} details => ${JSON.stringify(this.strategy)} ----`);
-      console.log(`---- strategy ${this.name} details => `, this.strategy);
+      // logger.info(`---- strategy ${this.name} details => ${JSON.stringify(this.strategy)} ----`);
+      // console.log(`---- strategy ${this.name} details => `, this.strategy);
       if (this.strategy.startTime)
         this.strategyStartTime = parseTimestamp(this.strategy.startTime);
       if (this.strategy.stragyStopTime)
@@ -100,7 +101,6 @@ class BaseStrategy {
       setTimeout(() => {
         logger.info(`${this.name}: market just opened..`);
         this.run();
-
       }, waitTimeInMillis);
     } else {
       this.run();
@@ -154,10 +154,15 @@ class BaseStrategy {
     // first fetch prev day data and then start actual process
     this.fetchPrevDayData().then(() => {
       logger.info(`${this.name}: fetching prev day data done.`);
-      processInLoop();
+      if (config.backTesting) {
+        if (this.backTesting) return this.backTesting();
+      } else {
+        processInLoop();
+      }
     })
       .catch(console.error);
   }
+
 
   process() {
     // Override the logic in each sub class that is derived from this BaseStragey class
@@ -249,6 +254,12 @@ class BaseStrategy {
     const from = getMarketStartTime();
     const to = getMarketEndTime();
 
+
+    from.setDate(from.getDate() - skipDate);
+    to.setDate(to.getDate() - skipDate);
+    // to.setHours(14);
+    // to.setMinutes(34);
+
     // TODO: consider only signal generated stocks instead of this.stocks
     return new Promise((resolve, reject) => {
       async.series(_.map(this.stocks, tradingSymbol => {
@@ -327,8 +338,13 @@ class BaseStrategy {
       const from = new Date(getMarketStartTime());
       const to = new Date(getMarketEndTime());
 
-      from.setDate(from.getDate() - 7); // in case of upstox max 7 days for intraday data hence 7 is set here
-      to.setDate(to.getDate() - 1);
+      from.setDate(from.getDate() - (7 + skipDate)); // in case of upstox max 7 days for intraday data hence 7 is set here
+      to.setDate(to.getDate() - (1 + skipDate));
+
+      to.setHours(20);
+      to.setMinutes(0);
+
+
 
       HistoryAPIs.fetchHistory(data.tradingSymbol, this.traceCandlesInterval, from, to).then(candles => {
         if (!candles || candles.length === 0) {

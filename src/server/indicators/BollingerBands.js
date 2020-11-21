@@ -1,9 +1,13 @@
-// import {
-//     getAvgCandleSize
-// } from '../utils/utils.js';
+import {
+    isSideWayMarket,
+    getAvgCandleSize
+} from '../utils/utils.js';
+
+import ZigZag from "./ZigZag.js";
 
 const BollingerBands = require('technicalindicators').BollingerBands;
 
+const near = .003;
 
 module.exports = class {
     constructor(candles) {
@@ -12,6 +16,8 @@ module.exports = class {
         const results = this.results;
         this.last = results[results.length - 1];
         this.lastCandle = candles[candles.length - 1];
+        this.secondLastCandle = candles[candles.length - 2];
+        this.zigzag = new ZigZag(candles, .25);
     }
     bandWidth(lastBand = this.last, lastCandle = this.lastCandle) {
         return ((lastBand.upper - lastBand.lower) / lastBand.middle);
@@ -69,7 +75,10 @@ module.exports = class {
             return this.inContactMiddleBand(cmp);
         return false;
     }
+
+
     inContact(uptrend, cmp) {
+        return true;
         return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);
     }
     inContactLowerUpper(uptrend, cmp) {
@@ -77,30 +86,80 @@ module.exports = class {
     }
     isSupport(key = "lower") {
         const candles = this.candles;
-
         const x = candles[candles.length - 1].low - this.results[this.results.length - 1][key];
         const y = candles[candles.length - 2].low - this.results[this.results.length - 2][key];
         const z = candles[candles.length - 3].low - this.results[this.results.length - 3][key];
-
         // console.log(candles[candles.length - 1].low, this.results[this.results.length - 1][key]);
         // console.log(candles[candles.length - 2].low, this.results[this.results.length - 2][key]);
         // console.log(candles[candles.length - 3].low, this.results[this.results.length - 3][key]);
         // console.log(x, y, z);
-
+        if (isSideWayMarket(candles, 3)) {
+            return Math.min(x, y, z) === x;
+        }
         return x < y && y < z;
+
     }
     isResistance(key = "upper") {
         const candles = this.candles;
-
         const x = candles[candles.length - 1].high - this.results[this.results.length - 1][key];
         const y = candles[candles.length - 2].high - this.results[this.results.length - 2][key];
         const z = candles[candles.length - 3].high - this.results[this.results.length - 3][key];
-
         // console.log(candles[candles.length - 1].high, this.results[this.results.length - 1][key]);
         // console.log(andles[candles.length - 2].high, this.results[this.results.length - 2][key]);
         // console.log(candles[candles.length - 3].high, this.results[this.results.length - 3][key]);
         // console.log(x, y, z);
-
+        if (isSideWayMarket(candles, 3)) {
+            return Math.min(x, y, z) === x;
+        }
         return x < y && y < z;
     }
+    doubleTouchingCandle(uptrend, lastBand = this.last, lastCandle = this.lastCandle) {
+        if (uptrend) {
+            // if (lastBand.middle >= lastCandle.open || ((lastBand.middle + (lastBand.middle * near)) >= lastCandle.open)) {
+            if (lastBand.upper <= lastCandle.close || ((lastBand.upper - (lastBand.upper * near)) <= lastCandle.close)) {
+                return true;
+            }
+            // }
+        } else {
+            // if (lastBand.middle <= lastCandle.open || ((lastBand.middle - (lastBand.middle * near)) <= lastCandle.open)) {
+            if (lastBand.lower >= lastCandle.close || ((lastBand.lower + (lastBand.lower * near)) >= lastCandle.close)) {
+                return true;
+            }
+            // }
+        }
+        return false;
+    }
+
+    inReversal(uptrend, cap = true) {
+        const candles = this.candles;
+        // console.log(this.lastCandle.date.toLocaleString());
+        if (cap) {
+            if (this.doubleTouchingCandle(uptrend)) {
+                return false;
+            }
+            const avgCandleSize = getAvgCandleSize(candles);
+            const maxCandleSize = avgCandleSize * 1.5;
+            if (maxCandleSize < Math.abs(this.lastCandle.open - this.lastCandle.close)) {
+                return false;
+            }
+        }
+
+        // range breakout
+        if (!isSideWayMarket(candles, 4)) {
+            if (isSideWayMarket(candles.slice(0, candles.length - 1), 4)) {
+                return true;
+            }
+        }
+        const lastNBreakPoints = this.zigzag.lastNBreakPoints(2);
+        const lastPoints = [this.secondLastCandle.low, this.secondLastCandle.high, uptrend ? this.lastCandle.low : this.lastCandle.high];
+        const includes = !!lastNBreakPoints.filter(b => lastPoints.includes(b)).length;
+        // console.log(lastNBreakPoints, lastPoints, includes);
+        return includes;
+    }
 };
+
+
+
+
+
+

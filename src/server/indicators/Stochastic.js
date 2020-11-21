@@ -58,7 +58,7 @@ module.exports = class {
         return (uptrend ? this.longMomentum() : this.shortMomentum()) && this.strongCrossOver();
     }
     calculate(candles = this.candles) {
-        let period = 8;
+        let period = 14;
         let signalPeriod = 3;
         const formattedInput = formatToInput(candles);
         let input = {

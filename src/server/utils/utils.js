@@ -443,11 +443,11 @@ export function getAvgCandleSize(candles) {
   return _.mean(levels);
 }
 
-export function isSideWayMarket(candles) {
+export function isSideWayMarket(candles, n = 6) {
   const avg = getAvgCandleSize(candles);
   const highes = [];
   const lowes = [];
-  for (let i = candles.length - 6; i < candles.length - 1; i++) {
+  for (let i = candles.length - n; i < candles.length - 1; i++) {
     highes.push(candles[i].high);
     lowes.push(candles[i].low);
   }

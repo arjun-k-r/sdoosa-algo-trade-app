@@ -18,26 +18,38 @@ module.exports = class {
     isUpTrend(last = this.last) {
         return last.mdi < last.pdi;
     }
+
     isTrending(last = this.last) {
         return last.adx > 25;
     }
     isStrongTrend(last = this.last) {
-        return last.adx > 40;
+        return last.adx > 50;
     }
+
     isVeryStrongTrend(last = this.last) {
-        return last.adx > 60;
+        return last.adx > 75;
+    }
+    isTrendGrowing() {
+        return this.isTrending() && this.isReversalStarted();
     }
     isStrongTrendGrowing() {
         return this.isStrongTrend() && this.isReversalStarted();
     }
+    heavyTrendGrowing() {
+        const results = this.results;
+        const [secondLast, last] = results.slice(Math.max(results.length - 2, 0));
+        return (secondLast.adx + 1.5) < last.adx;
+    }
     isReversalStarted() {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));
-        const arr = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
-        const arr2 = nResults.map(r => r.adx);
-        const rev = arr[0] > arr[1] && arr[1] > arr[2];
-        const rev2 = arr2[0] > arr2[1] && arr2[1] > arr2[2];
-        return !rev && !rev2;
+        const arr = nResults.map(r => r.adx);
+        const arr1 = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
+        const arr2 = nResults.map(r => r[this.isUpTrend() ? "mdi" : "pdi"]);
+        const rev = arr[0] <= arr[1] && arr[1] < arr[2];
+        const rev1 = arr1[1] <= arr1[2];
+        const rev2 = arr2[1] < arr2[2];
+        return rev && (rev1 && !rev2);
     }
     crossOverInput() {
         const results = this.results;

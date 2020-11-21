@@ -1,6 +1,6 @@
 (function start() {
 
-    const min = 100, max = 10000;
+    const min = 90, max = 5000;
 
     return processCurrentMarket();
 

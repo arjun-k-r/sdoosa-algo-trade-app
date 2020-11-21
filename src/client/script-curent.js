@@ -1,6 +1,6 @@
 (function start() {
 
-    const min = 100, max = 5000;
+    const min = 90, max = 5000;
 
     return processCurrentMarket();
 
@@ -47,7 +47,7 @@
 })()
     .then((results) => {
         // console.clear();
-        console.log(JSON.stringify(results.slice(0, 30).map(result => result.symbol), null, 4));
+        console.log(JSON.stringify(results.slice(0, 60).reverse().map(result => result.symbol), null, 4));
 
     })
     .catch(console.error);

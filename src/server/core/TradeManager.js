@@ -503,6 +503,11 @@ class TradeManager {
       }
     }
 
+
+    if (config.sandboxTesting) {
+      throw new Error("Order can't be placed running in sandbox");
+    }
+
     return OrderManager.placeOrder(trade.broker, orderDetails).then(order => {
       trade.order = {
         orderId: order.orderId, // in case of CO/BO, this order id is of first leg

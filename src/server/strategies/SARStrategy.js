@@ -49,6 +49,14 @@ const signalTypes = [
   markets[1] + "/" + momentums[1] + "/" + trendConfirmations[1]
 ];
 
+const backTesting = true;
+
+function consoleLog(...args) {
+  if (config.sandboxTesting && !backTesting) {
+    console.log.apply(null, args);
+  }
+}
+
 class SARStrategy extends BaseStrategy {
 
   constructor() {
@@ -60,9 +68,9 @@ class SARStrategy extends BaseStrategy {
     if (this.maxTradesReached) {
       return Promise.resolve();
     }
-    // console.log("process started");
+    consoleLog("process started");
     return this.fetchTraceCandlesHistory().then(() => {
-      // console.log("traced candle history");
+      consoleLog("traced candle history");
 
       if (!config.sandboxTesting) {
         const now = new Date();
@@ -70,113 +78,122 @@ class SARStrategy extends BaseStrategy {
           logger.info(`Stratery starting time is ${this.stratergyStartTime}`);
           return;
         }
+
       }
       try {
-        this.findSupportAndResistance();
+        _.each(this.stocks, tradingSymbol => {
+          const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
+          if (data && data.traceCandles && data.traceCandles.length) {
+            const traceCandles = data.traceCandles;
+            const candles = data.candles;
+            console.log(tradingSymbol);
+            if (traceCandles && traceCandles.length && candles && candles.length) {
+              if (backTesting) {
+                for (let i = 0; i < candles.length; i++) {
+                  const sliced = candles.slice(0, i + 1);
+                  this.findSupportAndResistance(tradingSymbol, sliced, [].concat(data.traceCandlesPrevDays, sliced), data);
+                }
+              } else {
+                this.findSupportAndResistance(tradingSymbol, candles, traceCandles, data);
+              }
+            }
+          }
+        });
       } catch (err) {
         console.error("findSupportAndResistance", err);
       }
     });
   }
-  findSupportAndResistance() {
-    _.each(this.stocks, tradingSymbol => {
-      const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-      if (data && data.traceCandles && data.traceCandles.length) {
-        // console.log("=========================================================================================");
-
-        const traceCandles = data.traceCandles;
-        const candles = data.candles || traceCandles.slice(traceCandles.length - 75);
-
-        const adx = new ADX(traceCandles);
-        const vwap = new VWAP(candles);
-        const lastCandle = candles[candles.length - 1];
-        const sidewayMarket = isSideWayMarket(traceCandles);
-        // console.log(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
-        // console.log(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
-        // console.log("Sideway Market : ", sidewayMarket);
-        const bullishCandle = lastCandle.close > lastCandle.open;
-        // console.log("BullishCandle : ", bullishCandle);
-        if (bullishCandle === adx.isUpTrend()) {
-          const bb = new BollingerBands(traceCandles);
-          if (!sidewayMarket) {
-            const macd = new MACD(traceCandles);
-            const rsi = new RSI(traceCandles);
-            let confirmMomentum = false;
-            // console.log("Volatility : ", bb.isVolatile());
-            if (bb.isVolatile()) {
-              const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-              // console.log("RSI strong: ", strongMomentum);
-              if (strongMomentum) {
-                // console.log("VWAP isCrossOver :", vwap.isCrossOver());
-                if (vwap.isCrossOver()) {
-                  if (adx.isTrending() && !adx.isStrongTrend())
-                    confirmMomentum = true;
-                } else {
-                  // console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
-                  if (adx.isStrongTrendGrowing()) {
-                    // console.log("VWAP Near :", vwap.isNear());
-                    // if (!vwap.isNear()) {
-                    confirmMomentum = true;
-                    // }
-                  }
-                }
-              }
-            } else {
-              // console.log("Strong Trend Growing: ", adx.isStrongTrendGrowing());
-              if (adx.isStrongTrendGrowing()) {
-                // console.log("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
-                if (!adx.uniqueCrossOver(1)) {
-                  const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
-                  // console.log("RSI : ", rsiConfirm);
-                  if (rsiConfirm) {
-                    confirmMomentum = true;
-                  }
+  findSupportAndResistance(tradingSymbol, candles, traceCandles, data) {
+    consoleLog("=========================================================================================");
+    const adx = new ADX(traceCandles);
+    const vwap = new VWAP(candles);
+    const lastCandle = candles[candles.length - 1];
+    const sidewayMarket = isSideWayMarket(traceCandles);
+    consoleLog(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
+    consoleLog(tradingSymbol, "@", lastCandle.close, markets[adx.isTrending() ? 0 : 1], adx.isUpTrend() ? "UP" : "DOWN");
+    consoleLog("Sideway Market : ", sidewayMarket);
+    const bullishCandle = lastCandle.close > lastCandle.open;
+    consoleLog("BullishCandle : ", bullishCandle);
+    if (bullishCandle === adx.isUpTrend()) {
+      const bb = new BollingerBands(traceCandles);
+      if (!sidewayMarket) {
+        const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
+        consoleLog("ChartPattern : ", chartPattern);
+        if (chartPattern) {
+          const macd = new MACD(traceCandles);
+          const rsi = new RSI(traceCandles);
+          let confirmMomentum = false;
+          consoleLog("Volatility : ", bb.isVolatile());
+          if (bb.isVolatile()) {
+            const strongMomentum = rsi.confirmStrongMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+            consoleLog("RSI strong: ", strongMomentum);
+            if (strongMomentum) {
+              consoleLog("VWAP isCrossOver :", vwap.isCrossOver());
+              if (vwap.isCrossOver()) {
+                if (adx.isTrending() && !adx.isStrongTrend())
+                  confirmMomentum = true;
+              } else {
+                consoleLog("isTrendGrowing : ", adx.isTrendGrowing());
+                if (adx.isTrendGrowing()) {
+                  // console.log("VWAP Near :", vwap.isNear());
+                  // if (!vwap.isNear()) {
+                  confirmMomentum = true;
+                  // }
                 }
               }
             }
-
-            if (confirmMomentum) {
-              const touchedBB = bb.inContact(adx.isUpTrend());
-              // console.log("BolingerBand : ", touchedBB);
-              if (touchedBB) {
-                const chartPattern = adx.isUpTrend() ? this.bullish(traceCandles) : this.bearish(traceCandles);
-                // console.log("ChartPattern : ", chartPattern);
-                if (chartPattern) {
-                  const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
-                  // console.log("MACD : ", macdConfirm);
-                  if (macdConfirm) {
-                    const zigzag = new ZigZag(traceCandles, 3);
-                    const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
-                    // console.log("ZigZag confirm : ", zigzagConfirm);
-                    if (zigzagConfirm)
-                      this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1]);
-                  }
-                }
-              }
-            }
-
           } else {
-            // console.log("Strong Trend Growing : ", adx.isStrongTrendGrowing());
+            consoleLog("isStrongTrendGrowing: ", adx.isStrongTrendGrowing());
             if (adx.isStrongTrendGrowing()) {
-              // console.log("Volatility : ", bb.isVolatile());
-              if (bb.isVolatile()) {
-                const stochastic = new Stochastic(traceCandles);
-                const confirmTrend = vwap.isUpTrend() === adx.isUpTrend();
-                // console.log("WVAP Confirm : ", confirmTrend);
-                if (confirmTrend) {
-                  const confirmMomentum = stochastic.confirmMomentum(vwap.isUpTrend());
-                  // console.log("Stochastic : ", confirmMomentum);
-                  if (confirmMomentum) {
-                    let trigger = this.getTrigger(traceCandles, vwap.isUpTrend());
-                    this.generateTradeSignals(data, vwap.isUpTrend(), trigger, signalTypes[2]);
-                  }
+              consoleLog("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
+              if (!adx.uniqueCrossOver(1)) {
+                const rsiConfirm = rsi.confirmMomentum(adx.isUpTrend(), !adx.isStrongTrend());
+                consoleLog("RSI : ", rsiConfirm);
+                if (rsiConfirm) {
+                  confirmMomentum = true;
                 }
               }
             }
           }
+          if (confirmMomentum) {
+            const overBroughtOrOverSold = rsi.over(adx.isUpTrend());
+            consoleLog("overBroughtOrOverSold : ", overBroughtOrOverSold);
+            const touchedBB = bb.inReversal(adx.isUpTrend(), overBroughtOrOverSold);
+            consoleLog("BolingerBand : ", touchedBB);
+            if (touchedBB) {
+              const macdConfirm = adx.isUpTrend() ? macd.longMomentum() : macd.shortMomentum();
+              consoleLog("MACD : ", macdConfirm);
+              if (macdConfirm) {
+                const zigzag = new ZigZag(traceCandles, 3);
+                const zigzagConfirm = !(adx.isUpTrend() ? zigzag.isNearResistance() : zigzag.isNearSupport());
+                consoleLog("ZigZag confirm : ", zigzagConfirm);
+                if (zigzagConfirm)
+                  this.generateTradeSignals(data, adx.isUpTrend(), lastCandle.close, signalTypes[bb.isVolatile() ? 0 : 1], lastCandle);
+              }
+            }
+          }
         }
+      } else {
+        // consoleLog("Strong Trend Growing : ", adx.isStrongTrendGrowing());
+        // if (adx.isStrongTrendGrowing()) {
+        consoleLog("Volatility : ", bb.isVolatile());
+        if (bb.isVolatile()) {
+          const stochastic = new Stochastic(traceCandles);
+          const confirmTrend = vwap.isUpTrend() === adx.isUpTrend();
+          consoleLog("WVAP Confirm : ", confirmTrend);
+          if (confirmTrend) {
+            const confirmMomentum = stochastic.confirmMomentum(vwap.isUpTrend());
+            consoleLog("Stochastic : ", confirmMomentum);
+            if (confirmMomentum) {
+              let trigger = this.getTrigger(traceCandles, candles, vwap.isUpTrend());
+              this.generateTradeSignals(data, vwap.isUpTrend(), trigger, signalTypes[2], lastCandle);
+            }
+          }
+        }
+        // }
       }
-    });
+    }
   }
   bearish(traceCandles) {
     return bearish(formatToInput(traceCandles));
@@ -184,8 +201,8 @@ class SARStrategy extends BaseStrategy {
   bullish(traceCandles) {
     return bullish(formatToInput(traceCandles));
   }
-  getTrigger(traceCandles, uptrend, price) {
-    const lastCandle = traceCandles[traceCandles.length - 1];
+  getTrigger(traceCandles, candles, uptrend, price) {
+    const lastCandle = candles[candles.length - 1];
     price = price || lastCandle.close;
     let trigger = this.findBreakPoint(traceCandles, price, uptrend);
     if (!trigger || !isNear(trigger, lastCandle.close, .01)) {
@@ -211,7 +228,7 @@ class SARStrategy extends BaseStrategy {
 
     const tm = TradeManager.getInstance();
 
-    // console.log("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
+    consoleLog("Check near", tradeSignal.trigger, liveQuote.cmp, tradeSignal.isBuy);
     if (!isNear(tradeSignal.trigger, liveQuote.cmp, NEAR)) {
       if ((tradeSignal.isBuy && tradeSignal.trigger < liveQuote.cmp) || (!tradeSignal.isBuy && tradeSignal.trigger > liveQuote.cmp)) {
         tradeSignal.message = (tradeSignal.message || "") + " | Trigger already crossed, so disabling";
@@ -226,7 +243,7 @@ class SARStrategy extends BaseStrategy {
     // // }
 
     if (tradeSignal.signalBy === signalTypes[2]) {
-      // console.log("Check Stochastic");
+      consoleLog("Check Stochastic");
       const stochastic = new Stochastic(data.traceCandles);
       if (!stochastic.confirmMomentum(tradeSignal.isBuy)) {
         tradeSignal.message = (tradeSignal.message || "") + " | Momentum lost,so disabling";
@@ -250,8 +267,6 @@ class SARStrategy extends BaseStrategy {
         }
       }
     }
-
-
     return true;
   };
   shouldPlaceTrade(tradeSignal, liveQuote) {
@@ -290,7 +305,16 @@ class SARStrategy extends BaseStrategy {
     return this.confirmTrade(tradeSignal, liveQuote);
   }
 
-  generateTradeSignals(data, longPosition, price, signalBy) {
+  generateTradeSignals(data, longPosition, price, signalBy, lastCandle) {
+    if (backTesting) {
+      logger.info(`
+      ${this.name}: ${data.tradingSymbol} ${longPosition ? "LONG" : "SHORT"} 
+      trade signal generated for @ ${price} 
+      ${lastCandle.date.toLocaleDateString()} ${lastCandle.date.toLocaleTimeString()}
+      ${signalBy}
+      `);
+      return;
+    }
     const tm = TradeManager.getInstance();
     const brokers = _.get(this.strategy, 'brokers', []);
     if (!data.buyTradeSignal) {
@@ -301,7 +325,7 @@ class SARStrategy extends BaseStrategy {
     }
     const signalType = longPosition ? "buyTradeSignal" : "sellTradeSignal";
     _.each(brokers, broker => {
-      const ts1 = this.createTradeSignal(data, longPosition, price, broker, signalBy);
+      const ts1 = this.createTradeSignal(data, longPosition, price, broker, signalBy, lastCandle);
       logger.info(`${this.name}: ${data.tradingSymbol} ${longPosition ? "LONG" : "SHORT"} trade signal generated for ${broker} @ ${ts1.trigger}`);
       data[signalType][broker] = ts1;
       tm.addTradeSignal(ts1);
@@ -309,8 +333,7 @@ class SARStrategy extends BaseStrategy {
     data.isTradeSignalGenerated = true;
   }
 
-  createTradeSignal(data, longPosition, price, broker, signalBy) {
-    const lastCandle = data.traceCandles[data.traceCandles.length - 1];
+  createTradeSignal(data, longPosition, price, broker, signalBy, lastCandle) {
     const tm = TradeManager.getInstance();
 
     const SL_PERCENTAGE = _.get(this.strategy, 'slPercentage', 0.2);
@@ -358,6 +381,8 @@ class SARStrategy extends BaseStrategy {
     ts1.changeEntryPriceIfOrderNotFilled = true;
     ts1.limitOrderBufferPercentage = 0.05;
     ts1.signalBy = signalBy;
+
+    tradeSignal.message = (tradeSignal.message || "") + `${lastCandle.date.toLocaleDateString()} ${lastCandle.date.toLocaleTimeString()}`;
 
     const oldts = tm.getTradeSignalOfSame(ts1);
     if (oldts) {

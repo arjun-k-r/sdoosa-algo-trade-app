@@ -13,7 +13,10 @@ module.exports = class {
     overSold(last = this.last) {
         return last <= 20;
     }
-    chanceOfTrendReversal(uptrend, last) {
+    over(uptrend, last = this.last) {
+        return uptrend ? this.overBrought(last) : this.overSold(last);
+    }
+    chanceOfTrendReversal(uptrend, last = this.last) {
         return uptrend ? this.overSold(last) : this.overBrought(last);
     }
     isTrendReversalHappendInRecent() {
@@ -49,7 +52,7 @@ module.exports = class {
     }
     calculate(candles = this.candles) {
         const inputRSI = {
-            period: 8
+            period: 14
         };
         inputRSI.values = candles.map(c => c.close);
         return RSI.calculate(inputRSI);

@@ -9,19 +9,26 @@ module.exports = class ZigZag {
         this.lastCandle = candles[candles.length - 1];
     }
     breakPoints() {
-        return this.results;
+        return [...this.results];
+    }
+    lastNBreakPoints(n = 2) {
+        const breakPoints = this.breakPoints();
+        return breakPoints.slice(breakPoints.length - n);
+    }
+    sortedBreakPoints() {
+        return this.breakPoints().sort((a, b) => a - b);
     }
     isNearSupport(cmp = this.lastCandle.close, per = .8) {
         const c = cmp * per / 100;
-        return this.results.filter(r => r <= cmp && r + c >= cmp).length;
+        return this.sortedBreakPoints().filter(r => r <= cmp && r + c >= cmp).length;
     }
     isNearResistance(cmp = this.lastCandle.close, per = .8) {
         const c = cmp * per / 100;
-        return this.results.filter(r => r >= cmp && r - c <= cmp).length;
+        return this.sortedBreakPoints().filter(r => r >= cmp && r - c <= cmp).length;
     }
     calculate(candles = this.candles, deviation = this.deviation) {
-        return zigzag({ xData: candles, yData: candles }, { lowIndex: "low", highIndex: "high", deviation })
-            .yData.sort((a, b) => a - b);
+        const res = zigzag({ xData: candles, yData: candles }, { lowIndex: "low", highIndex: "high", deviation });
+        return res.yData;
     }
 };
 

@@ -445,14 +445,13 @@ export function getAvgCandleSize(candles) {
 
 export function isSideWayMarket(candles, n = 6) {
   const avg = getAvgCandleSize(candles);
-  const highes = [];
-  const lowes = [];
+  const points = [];
   for (let i = candles.length - n; i < candles.length - 1; i++) {
-    highes.push(candles[i].high);
-    lowes.push(candles[i].low);
+    points.push(candles[i].open);
+    points.push(candles[i].close);
   }
-  const h = Math.max(...highes);
-  const l = Math.min(...lowes);
+  const h = Math.max(...points);
+  const l = Math.min(...points);
   return (h - l) < avg;
 }
 

@@ -25,29 +25,34 @@ module.exports = class {
     isStrongTrend(last = this.last) {
         return last.adx > 50;
     }
-
     isVeryStrongTrend(last = this.last) {
         return last.adx > 75;
     }
-    isTrendGrowing() {
-        return this.isTrending() && this.isReversalStarted();
+    isTrendGrowing(adx) {
+        return this.isTrending() && this.isReversalStarted(adx);
     }
-    isStrongTrendGrowing() {
-        return this.isStrongTrend() && this.isReversalStarted();
+    isStrongTrendGrowing(adx) {
+        return this.isStrongTrend() && this.isReversalStarted(adx);
+    }
+    isTrendLosing() {
+        const results = this.results;
+        const nResults = results.slice(Math.max(results.length - 3, 0));
+        const arr = nResults.map(r => r.adx);
+        return arr[1] >= arr[2];
     }
     heavyTrendGrowing() {
         const results = this.results;
         const [secondLast, last] = results.slice(Math.max(results.length - 2, 0));
         return (secondLast.adx + 1.5) < last.adx;
     }
-    isReversalStarted() {
+    isReversalStarted(adx = true) {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));
         const arr = nResults.map(r => r.adx);
         const arr1 = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
         const arr2 = nResults.map(r => r[this.isUpTrend() ? "mdi" : "pdi"]);
-        const rev = arr[0] <= arr[1] && arr[1] < arr[2];
-        const rev1 = arr1[1] <= arr1[2];
+        const rev = adx ? arr[1] < arr[2] : true;
+        const rev1 = arr1[1] < arr1[2];
         const rev2 = arr2[1] < arr2[2];
         return rev && (rev1 && !rev2);
     }

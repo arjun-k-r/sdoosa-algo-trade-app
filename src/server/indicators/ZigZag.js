@@ -7,6 +7,7 @@ module.exports = class ZigZag {
         const results = this.results;
         this.last = results[results.length - 1];
         this.lastCandle = candles[candles.length - 1];
+
     }
     breakPoints() {
         return [...this.results];

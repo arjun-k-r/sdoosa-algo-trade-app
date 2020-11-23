@@ -27,7 +27,6 @@ const strategies = getStrategies();
 const skipDate = 0;
 
 class BaseStrategy {
-
   constructor(name) {
     this.name = name;
 
@@ -37,8 +36,8 @@ class BaseStrategy {
       // console.log(`---- strategy ${this.name} details => `, this.strategy);
       if (this.strategy.startTime)
         this.strategyStartTime = parseTimestamp(this.strategy.startTime);
-      if (this.strategy.stragyStopTime)
-        this.stragyStopTime = parseTimestamp(this.strategy.stopTime);
+      if (this.strategy.stopTime)
+        this.strategyStopTime = parseTimestamp(this.strategy.stopTime);
       this.stocks = _.get(this.strategy, 'stocks', []);
       this.candlesInterval = _.get(this.strategy, 'candlesInterval', 5);
       this.traceCandlesInterval = _.get(this.strategy, 'traceCandlesInterval', 5);
@@ -50,6 +49,9 @@ class BaseStrategy {
     this.process = this.process.bind(this);
 
     this.stocksCache = [];
+    this.backTestSignalCount = 0;
+    this.backTestProfit = 0;
+    this.backTestLoss = 0;
   }
 
   isEnabled() {
@@ -303,8 +305,6 @@ class BaseStrategy {
               logger.error(`${this.name}: Error while fetching current day candles of ${tradingSymbol}, Error: ${JSON.stringify(err)}`);
               callback(null, { data, tradingSymbol, error: err });
             });
-
-
           }).catch(err => {
             logger.error(`${this.name}: Error while fetching trace candles of prev days, Error: ${JSON.stringify(err)}`);
             callback(null, { data, tradingSymbol, error: err });

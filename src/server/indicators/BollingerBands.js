@@ -9,6 +9,7 @@ const BollingerBands = require('technicalindicators').BollingerBands;
 
 const near = .003;
 
+
 module.exports = class {
     constructor(candles) {
         this.candles = candles;
@@ -17,7 +18,7 @@ module.exports = class {
         this.last = results[results.length - 1];
         this.lastCandle = candles[candles.length - 1];
         this.secondLastCandle = candles[candles.length - 2];
-        this.zigzag = new ZigZag(candles, .25);
+        this.zigzag = new ZigZag(candles, 1);
     }
     bandWidth(lastBand = this.last, lastCandle = this.lastCandle) {
         return ((lastBand.upper - lastBand.lower) / lastBand.middle);
@@ -64,22 +65,16 @@ module.exports = class {
     inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         if (lastBand.middle <= cmp)
             return true;
-        if (this.isResistance("middle"))
-            return this.inContactMiddleBand(cmp);
+        // if (this.isResistance("middle"))
+        //     return this.inContactMiddleBand(cmp);
         return false;
     }
     inContactMiddleLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
         if (lastBand.middle >= cmp)
             return true;
-        if (this.isSupport("middle"))
-            return this.inContactMiddleBand(cmp);
+        // if (this.isSupport("middle"))
+        //     return this.inContactMiddleBand(cmp);
         return false;
-    }
-
-
-    inContact(uptrend, cmp) {
-        return true;
-        return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);
     }
     inContactLowerUpper(uptrend, cmp) {
         return uptrend ? this.inContactLowerBand(cmp) : this.inContactUpperBand(cmp);
@@ -113,6 +108,7 @@ module.exports = class {
         }
         return x < y && y < z;
     }
+
     doubleTouchingCandle(uptrend, lastBand = this.last, lastCandle = this.lastCandle) {
         if (uptrend) {
             // if (lastBand.middle >= lastCandle.open || ((lastBand.middle + (lastBand.middle * near)) >= lastCandle.open)) {
@@ -130,9 +126,12 @@ module.exports = class {
         return false;
     }
 
+    inContact(uptrend, cmp) {
+        return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);
+    }
     inReversal(uptrend, cap = true) {
         const candles = this.candles;
-        // console.log(this.lastCandle.date.toLocaleString());
+        // console.log(this.lastCandle.date.toLocaleString(), cap);
         if (cap) {
             if (this.doubleTouchingCandle(uptrend)) {
                 return false;
@@ -143,18 +142,17 @@ module.exports = class {
                 return false;
             }
         }
-
         // range breakout
         if (!isSideWayMarket(candles, 4)) {
             if (isSideWayMarket(candles.slice(0, candles.length - 1), 4)) {
-                return true;
+                return this.inContact(uptrend);
             }
         }
         const lastNBreakPoints = this.zigzag.lastNBreakPoints(2);
         const lastPoints = [this.secondLastCandle.low, this.secondLastCandle.high, uptrend ? this.lastCandle.low : this.lastCandle.high];
         const includes = !!lastNBreakPoints.filter(b => lastPoints.includes(b)).length;
         // console.log(lastNBreakPoints, lastPoints, includes);
-        return includes;
+        return includes && this.inContact(uptrend);
     }
 };
 

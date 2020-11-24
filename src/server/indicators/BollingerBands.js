@@ -65,15 +65,15 @@ module.exports = class {
     inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         if (lastBand.middle <= cmp)
             return true;
-        // if (this.isResistance("middle"))
-        //     return this.inContactMiddleBand(cmp);
+        if (this.isResistance("middle"))
+            return this.inContactMiddleBand(cmp);
         return false;
     }
     inContactMiddleLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
         if (lastBand.middle >= cmp)
             return true;
-        // if (this.isSupport("middle"))
-        //     return this.inContactMiddleBand(cmp);
+        if (this.isSupport("middle"))
+            return this.inContactMiddleBand(cmp);
         return false;
     }
     inContactLowerUpper(uptrend, cmp) {

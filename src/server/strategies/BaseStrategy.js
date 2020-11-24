@@ -23,8 +23,8 @@ import Upstox from '../brokers/upstox/Upstox.js';
 
 const config = getConfig();
 const strategies = getStrategies();
-
 const skipDate = 0;
+
 
 class BaseStrategy {
   constructor(name) {
@@ -52,6 +52,7 @@ class BaseStrategy {
     this.backTestSignalCount = 0;
     this.backTestProfit = 0;
     this.backTestLoss = 0;
+    this.profit = 0;
   }
 
   isEnabled() {

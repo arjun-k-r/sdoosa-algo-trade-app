@@ -24,10 +24,16 @@ module.exports = class {
         return ((lastBand.upper - lastBand.lower) / lastBand.middle);
         // return ((lastBand.upper - lastBand.lower) / getAvgCandleSize(this.candles)) / 100;
     }
+    volatility(lastBand = this.last) {
+        return lastBand.upper - lastBand.lower;
+    }
+    isVolatilityLow() {
+        return (this.volatility() / 2) < getAvgCandleSize(this.candles);
+    }
     isSqueze(...args) {
         const bandWidth = this.bandWidth.apply(this, args);
         // console.log(bandWidth, getAvgCandleSize(this.candles));
-        return bandWidth <= 0.01;
+        return bandWidth <= 0.0125;
     }
     isVolatile(...args) {
         return !this.isSqueze.apply(this, args);

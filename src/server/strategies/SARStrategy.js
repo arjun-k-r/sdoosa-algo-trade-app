@@ -210,34 +210,37 @@ class SARStrategy extends BaseStrategy {
           signalType.push(volatility[0]);
           const strongMomentum = rsi.confirmMomentum(upTrend, true);
           consoleLog("RSI strong: ", strongMomentum);
-          // if (strongMomentum) {
-          consoleLog("adx.isReversalStarted() :", adx.isReversalStarted());
-          if (adx.isReversalStarted(false)) {
-            consoleLog("VWAP isCrossOver :", vwap.isCrossOver());
-            if (vwap.isCrossOver()) {
-              signalType.push(trendConfirmations[1]);
-              signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last);
-              if (vwap.isUpTrend() === upTrend) {
-                if (adx.isTrendGrowing()) {
-                  confirmMomentum = true;
+          if (strongMomentum) {
+            signalType.push(momentums[0]);
+            consoleLog("adx.isReversalStarted() :", adx.isReversalStarted());
+            if (adx.isReversalStarted(false)) {
+              consoleLog("VWAP isCrossOver :", vwap.isCrossOver());
+              if (vwap.isCrossOver()) {
+                signalType.push(trendConfirmations[1]);
+                signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last);
+                if (vwap.isUpTrend() === upTrend) {
+                  if (adx.isTrendGrowing()) {
+                    confirmMomentum = true;
+                  }
+                } else {
+                  if (adx.isTrendLosing()) {
+                    confirmMomentum = true;
+                  }
                 }
+                //   signalType.push(momentums[0]);
+                //   signalType.push(trendConfirmations[1]);
+                //   // !adx.isStrongTrend()
+                //   const macdConfirm = upTrend ? macd.longMomentum() : macd.shortMomentum();
+                //   consoleLog("MACD : ", macdConfirm);
+                //   signalType.push(trendConfirmations[0]);
+                //   if (adx.isReversalStarted()) {
+                //     confirmMomentum = true;
+                //   }
               } else {
-
+                confirmMomentum = true;
               }
-              //   signalType.push(momentums[0]);
-              //   signalType.push(trendConfirmations[1]);
-              //   // !adx.isStrongTrend()
-              //   const macdConfirm = upTrend ? macd.longMomentum() : macd.shortMomentum();
-              //   consoleLog("MACD : ", macdConfirm);
-              //   signalType.push(trendConfirmations[0]);
-              //   if (adx.isReversalStarted()) {
-              //     confirmMomentum = true;
-              //   }
-            } else {
-              confirmMomentum = true;
             }
           }
-          // }
         }
 
         // else {
@@ -270,7 +273,7 @@ class SARStrategy extends BaseStrategy {
             // if (zigzagSupport)
             if (!zigzagResistance) {
               // if (upTrend ? sar.isBreakOut() : sar.isBreakDown())
-              this.generateTradeSignals(data, upTrend, lastCandle.close, signalType.join("/"), lastCandle, signalType.includes(momentums[0]) ? lastCandle.open : null);
+              this.generateTradeSignals(data, upTrend, lastCandle.close, signalType.join("/"), lastCandle, signalType.includes(trendConfirmations[1]) ? lastCandle.open : null);
             }
           }
         }

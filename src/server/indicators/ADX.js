@@ -45,16 +45,16 @@ module.exports = class {
         const [secondLast, last] = results.slice(Math.max(results.length - 2, 0));
         return (secondLast.adx + 1.5) < last.adx;
     }
-    isReversalStarted(adx = true) {
+    isReversalStarted() {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));
         const arr = nResults.map(r => r.adx);
         const arr1 = nResults.map(r => r[this.isUpTrend() ? "pdi" : "mdi"]);
         const arr2 = nResults.map(r => r[this.isUpTrend() ? "mdi" : "pdi"]);
-        const rev = adx ? arr[1] < arr[2] : true;
+        const rev = arr[1] < arr[2];
         const rev1 = arr1[1] < arr1[2];
         const rev2 = arr2[1] < arr2[2];
-        return rev && (rev1 && !rev2);
+        return [!rev, rev1, !rev2].filter(r => r).length > 1;
     }
     crossOverInput() {
         const results = this.results;

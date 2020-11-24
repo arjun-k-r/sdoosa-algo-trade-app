@@ -47,7 +47,7 @@ module.exports = class {
         if (lastBand.upper < cmp)
             return true;
         if (this.isResistance())
-            return (lastBand.upper - cmp) <= diff / 2;
+            return (lastBand.upper - cmp) <= diff / 3;
         return false;
     }
     inContactLowerBand(cmp = this.lastCandle.low, lastBand = this.last) {
@@ -55,12 +55,12 @@ module.exports = class {
         if (lastBand.lower > cmp)
             return true;
         if (this.isSupport())
-            return (cmp - lastBand.lower) <= diff / 2;
+            return (cmp - lastBand.lower) <= diff / 3;
         return false;
     }
     inContactMiddleBand(cmp = this.lastCandle.close, lastBand = this.last) {
         const diff = lastBand.middle < cmp ? lastBand.upper - lastBand.middle : lastBand.middle - lastBand.lower;
-        return Math.abs(lastBand.middle - cmp) <= diff / 2;
+        return Math.abs(lastBand.middle - cmp) <= diff / 3;
     }
     inContactMiddleUpperBand(cmp = this.lastCandle.high, lastBand = this.last) {
         if (lastBand.middle <= cmp)
@@ -75,9 +75,6 @@ module.exports = class {
         if (this.isSupport("middle"))
             return this.inContactMiddleBand(cmp);
         return false;
-    }
-    inContactLowerUpper(uptrend, cmp) {
-        return uptrend ? this.inContactLowerBand(cmp) : this.inContactUpperBand(cmp);
     }
     isSupport(key = "lower") {
         const candles = this.candles;
@@ -125,7 +122,9 @@ module.exports = class {
         }
         return false;
     }
-
+    inContactLowerUpper(uptrend, cmp) {
+        return uptrend ? this.inContactLowerBand(cmp) : this.inContactUpperBand(cmp);
+    }
     inContact(uptrend, cmp) {
         return uptrend ? this.inContactMiddleLowerBand(cmp) : this.inContactMiddleUpperBand(cmp);
     }

@@ -41,7 +41,7 @@ const config = getConfig();
 const markets = ["Trending", "Choppy"];
 const momentums = ["RSI", "Stochastic"];
 const volatility = ["Volatile", "Non-Volatile"];
-// const trendConfirmations = ["MACD", "VWAP"];
+const trendConfirmations = ["MACD", "VWAP"];
 
 function consoleLog(...args) {
   if (config.sandboxTesting && !config.backTesting) {
@@ -189,7 +189,6 @@ class SARStrategy extends BaseStrategy {
     const adx = new ADX(traceCandles);
     const vwap = new VWAP(candles);
     const lastCandle = candles[candles.length - 1];
-    const bullishCandle = lastCandle.open < lastCandle.close;
     const sidewayMarket = isSideWayMarket(traceCandles);
     consoleLog(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
     consoleLog(tradingSymbol, "@", lastCandle.close, upTrend ? "UP" : "DOWN");
@@ -216,9 +215,12 @@ class SARStrategy extends BaseStrategy {
           if (adx.isReversalStarted(false)) {
             consoleLog("VWAP isCrossOver :", vwap.isCrossOver());
             if (vwap.isCrossOver()) {
-              signalType.push(momentums[0]);
-              if (bullishCandle === upTrend) {
-                confirmMomentum = true;
+              signalType.push(trendConfirmations[1]);
+              signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last);
+              if (vwap.isUpTrend() === upTrend) {
+                if (adx.isTrendGrowing()) {
+                  confirmMomentum = true;
+                }
               } else {
 
               }
@@ -232,14 +234,7 @@ class SARStrategy extends BaseStrategy {
               //     confirmMomentum = true;
               //   }
             } else {
-              if (vwap.isNear()) {
-                if (vwap.isUpTrend() === upTrend) {
-                  signalType.push(momentums[0]);
-                  confirmMomentum = true;
-                }
-              } else {
-                confirmMomentum = true;
-              }
+              confirmMomentum = true;
             }
           }
           // }

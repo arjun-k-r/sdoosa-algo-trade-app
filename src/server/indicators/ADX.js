@@ -28,11 +28,15 @@ module.exports = class {
     isVeryStrongTrend(last = this.last) {
         return last.adx > 75;
     }
-    isTrendGrowing(adx) {
-        return this.isTrending() && this.isReversalStarted(adx);
-    }
+
     isStrongTrendGrowing(adx) {
         return this.isStrongTrend() && this.isReversalStarted(adx);
+    }
+    isTrendGrowing() {
+        const results = this.results;
+        const nResults = results.slice(Math.max(results.length - 3, 0));
+        const arr = nResults.map(r => r.adx);
+        return arr[1] < arr[2];
     }
     isTrendLosing() {
         const results = this.results;

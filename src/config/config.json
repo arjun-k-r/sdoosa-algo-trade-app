@@ -4,7 +4,8 @@
     "enableSSL": false,
     "sslPort": 8443
   },
-  "sandboxTesting": true,
+  "sandboxTesting": false,
+  "backTesting": false,
   "supportedBrokers": [
     "zerodha"
   ],

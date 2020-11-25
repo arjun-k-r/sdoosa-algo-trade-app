@@ -192,94 +192,111 @@ class SARStrategy extends BaseStrategy {
     const sidewayMarket = isSideWayMarket(traceCandles);
     consoleLog(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
     consoleLog(tradingSymbol, "@", lastCandle.close, upTrend ? "UP" : "DOWN");
-    consoleLog("Sideway Market : ", sidewayMarket);
 
     const signalType = [];
+    // if (sidewayMarket) {
+    //   return;
+    // }
+    if ((adx.isUpTrend() !== upTrend)) {
+      return;
+    }
+    signalType.push(markets[sidewayMarket ? 1 : 0]);
+    const chartPattern = this.chartPatternConfirm(upTrend, traceCandles);
+    if (!chartPattern) {
+      return;
+    }
+    if (vwap.isNear() && vwap.isUpTrend() !== upTrend) {
+      return;
+    }
     const bb = new BollingerBands(traceCandles);
-    // if (!sidewayMarket) {
-    if ((adx.isUpTrend() === upTrend)) {
-      signalType.push(markets[0]);
-      const chartPattern = upTrend ? this.bullish(traceCandles) : this.bearish(traceCandles);
-      consoleLog("ChartPattern : ", chartPattern);
-      if (chartPattern) {
-        // const macd = new MACD(traceCandles);
-        const rsi = new RSI(traceCandles);
-        let confirmMomentum = false;
-        consoleLog("Volatility : ", bb.isVolatile());
-        if (bb.isVolatile()) {
-          signalType.push(volatility[0]);
-          const strongMomentum = rsi.confirmMomentum(upTrend, true);
-          consoleLog("RSI strong: ", strongMomentum);
-          if (strongMomentum) {
-            signalType.push(momentums[0]);
-            consoleLog("adx.isReversalStarted() :", adx.isReversalStarted());
-            if (adx.isReversalStarted(false)) {
-              consoleLog("VWAP isCrossOver :", vwap.isCrossOver());
-              if (vwap.isCrossOver()) {
-                signalType.push(trendConfirmations[1]);
-                signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last);
-                if (vwap.isUpTrend() === upTrend) {
-                  if (adx.isTrendGrowing()) {
-                    confirmMomentum = true;
-                  }
-                } else {
-                  if (adx.isTrendLosing()) {
-                    confirmMomentum = true;
-                  }
-                }
-                //   signalType.push(momentums[0]);
-                //   signalType.push(trendConfirmations[1]);
-                //   // !adx.isStrongTrend()
-                //   const macdConfirm = upTrend ? macd.longMomentum() : macd.shortMomentum();
-                //   consoleLog("MACD : ", macdConfirm);
-                //   signalType.push(trendConfirmations[0]);
-                //   if (adx.isReversalStarted()) {
-                //     confirmMomentum = true;
-                //   }
-              } else {
-                confirmMomentum = true;
-              }
-            }
-          }
-        }
-
-        // else {
-        //   signalType.push(volatility[1]);
-        //   consoleLog("isStrongTrendGrowing: ", adx.isStrongTrendGrowing());
-        //   if (adx.isStrongTrendGrowing()) {
-        //     consoleLog("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
-        //     if (!adx.uniqueCrossOver(1)) {
-        //       const rsiConfirm = rsi.confirmMomentum(upTrend, true);
-        //       consoleLog("RSI : ", rsiConfirm);
-        //       if (rsiConfirm) {
-        //         signalType.push(momentums[0]);
-        //         confirmMomentum = true;
-        //       }
-        //     }
-        //   }
-        // }
-
-        if (confirmMomentum) {
-          // consoleLog(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
-          const touchedBB = bb.inContactLowerUpper(upTrend);
-          consoleLog("BolingerBand : ", touchedBB);
-          if (touchedBB) {
-            // const sar = new SAR(traceCandles);
-            const zigzag = new ZigZag(traceCandles, 3);
-            const zigzagResistance = upTrend ? zigzag.isNearResistance() : zigzag.isNearSupport();
-            // const zigzagSupport = upTrend ? zigzag.isNearSupport(undefined, .2) : zigzag.isNearResistance(undefined, .2);
-            // consoleLog("zigzagSupport : ", zigzagSupport);
-            consoleLog("zigzagResistance : ", zigzagResistance);
-            // if (zigzagSupport)
-            if (!zigzagResistance) {
-              // if (upTrend ? sar.isBreakOut() : sar.isBreakDown())
-              this.generateTradeSignals(data, upTrend, lastCandle.close, signalType.join("/"), lastCandle, signalType.includes(trendConfirmations[1]) ? lastCandle.open : null);
-            }
-          }
-        }
-        // }
+    if (!bb.isVolatile()) {
+      return;
+    }
+    signalType.push(volatility[0]);
+    // const macd = new MACD(traceCandles);
+    const rsi = new RSI(traceCandles);
+    if (!rsi.confirmMomentum(upTrend, true)) {
+      return;
+    }
+    signalType.push(momentums[0]);
+    if (!adx.isReversalStarted()) {
+      return;
+    }
+    signalType.push("ADX:reversal");
+    // let confirmMomentum = false;
+    // if (vwap.isCrossOver()) {
+    //   signalType.push(trendConfirmations[1]);
+    //   if (vwap.isUpTrend() === upTrend) {
+    //     if (adx.isTrendGrowing()) {
+    //       signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Growing");
+    //       confirmMomentum = true;
+    //     }
+    //   } else {
+    //     if (adx.isTrendLosing()) {
+    //       signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Losing");
+    //       confirmMomentum = true;
+    //     }
+    //   }
+    // } else {
+    //   signalType.push("NRML");
+    //   confirmMomentum = true;
+    // }
+    // if (!confirmMomentum) {
+    //   return;
+    // }
+    if (bb.isVolatile(2)) {
+      signalType.push("High:Volitility");
+      if (!bb.inContact(upTrend)) {
+        return;
+      }
+    } else {
+      if (!bb.inContactLowerUpper(upTrend)) {
+        return;
       }
     }
+    signalType.push("BB");
+
+    const sar = new SAR(traceCandles);
+    if (upTrend ? sar.isBreakDown() : sar.isBreakOut()) {
+      return;
+    }
+    signalType.push("SAR");
+
+    const zigzag = new ZigZag(traceCandles, 3);
+    const zigzagResistance = upTrend ? zigzag.isNearResistance() : zigzag.isNearSupport();
+    if (zigzagResistance) {
+      return;
+    }
+    signalType.push("ZigZag");
+    this.generateTradeSignals(data, upTrend, lastCandle.close, signalType.join("/"), lastCandle, signalType.includes(trendConfirmations[1]) ? lastCandle.open : null);
+
+    // const zigzagSupport = upTrend ? zigzag.isNearSupport(undefined, .2) : zigzag.isNearResistance(undefined, .2);
+    // consoleLog("zigzagSupport : ", zigzagSupport);
+    // if (zigzagSupport)
+
+    //   // !adx.isStrongTrend()
+    //   const macdConfirm = upTrend ? macd.longMomentum() : macd.shortMomentum();
+    //   consoleLog("MACD : ", macdConfirm);
+    //   signalType.push(trendConfirmations[0]);
+    //   if (adx.isReversalStarted()) {
+    //     confirmMomentum = true;
+    //   }
+    // else {
+    //   signalType.push(volatility[1]);
+    //   consoleLog("isStrongTrendGrowing: ", adx.isStrongTrendGrowing());
+    //   if (adx.isStrongTrendGrowing()) {
+    //     consoleLog("adx uniqueCrossOver : ", adx.uniqueCrossOver(1));
+    //     if (!adx.uniqueCrossOver(1)) {
+    //       const rsiConfirm = rsi.confirmMomentum(upTrend, true);
+    //       consoleLog("RSI : ", rsiConfirm);
+    //       if (rsiConfirm) {
+    //         signalType.push(momentums[0]);
+    //         confirmMomentum = true;
+    //       }
+    //     }
+    //   }
+    // }
+    // }
   }
   confirmRangeBreak(upTrend, traceCandles) {
 
@@ -294,6 +311,9 @@ class SARStrategy extends BaseStrategy {
       }
     }
     return false;
+  }
+  chartPatternConfirm(upTrend, traceCandles) {
+    return upTrend ? this.bullish(traceCandles) : this.bearish(traceCandles);
   }
   bearish(traceCandles) {
     return bearish(formatToInput(traceCandles));

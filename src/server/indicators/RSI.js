@@ -27,10 +27,10 @@ module.exports = class {
             .includes(true);
     }
     longMomentum(last = this.last) {
-        return last >= 50;
+        return last >= 45;
     }
     shortMomentum(last = this.last) {
-        return last <= 50;
+        return last <= 55;
     }
     confirmMomentum(uptrend, cap = false) {
         if (cap)

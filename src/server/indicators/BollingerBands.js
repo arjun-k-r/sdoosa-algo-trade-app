@@ -30,10 +30,10 @@ module.exports = class {
     isVolatilityLow() {
         return (this.volatility() / 2) < getAvgCandleSize(this.candles);
     }
-    isSqueze(...args) {
-        const bandWidth = this.bandWidth.apply(this, args);
+    isSqueze(n = 0.0125) {
+        const bandWidth = this.bandWidth();
         // console.log(bandWidth, getAvgCandleSize(this.candles));
-        return bandWidth <= 0.0125;
+        return bandWidth <= n;
     }
     isVolatile(...args) {
         return !this.isSqueze.apply(this, args);

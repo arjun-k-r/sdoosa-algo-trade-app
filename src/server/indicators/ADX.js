@@ -58,6 +58,10 @@ module.exports = class {
         const rev = arr[1] < arr[2];
         const rev1 = arr1[1] < arr1[2];
         const rev2 = arr2[1] < arr2[2];
+        // if ([rev, rev1, !rev2].filter(r => r).length === 3)
+        //     return true;
+        // if ([!rev, rev1, !rev2].filter(r => r).length === 3)
+        //     return true;
         return [!rev, rev1, !rev2].filter(r => r).length > 1;
     }
     crossOverInput() {

@@ -115,7 +115,8 @@ class SARStrategy extends BaseStrategy {
         dataSets.push(data);
       }
     });
-    return this.findTop(dataSets);
+    const tops = this.findTop(dataSets);
+    return tops;
   }
   backTesting() {
     return this.fetchTraceCandlesHistory().then(() => {
@@ -253,7 +254,7 @@ class SARStrategy extends BaseStrategy {
     if (!confirmMomentum) {
       return;
     }
-    if (bb.isVolatile(2)) {
+    if (bb.isVolatile(.02)) {
       signalType.push("High:Volitility");
       if (!bb.inContact(upTrend)) {
         return;
@@ -540,8 +541,9 @@ class SARStrategy extends BaseStrategy {
     ts1.timestamp = lastCandle.timestamp;
     ts1.tradeCutOffTime = this.strategyStopTimestamp;
     ts1.isTrailingSL = false;
+    ts1.cancelUnfilledOrderAfterMinutes = true;
     ts1.placeMarketOrderIfOrderNotFilled = false;
-    ts1.changeEntryPriceIfOrderNotFilled = true;
+    ts1.changeEntryPriceIfOrderNotFilled = false;
     ts1.limitOrderBufferPercentage = 0.05;
     ts1.signalBy = signalBy;
 

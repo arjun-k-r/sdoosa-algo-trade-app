@@ -49,6 +49,9 @@ module.exports = class {
         const [secondLast, last] = results.slice(Math.max(results.length - 2, 0));
         return (secondLast.adx + 1.5) < last.adx;
     }
+    strongGap(last = this.last) {
+        return Math.abs(last.pdi - last.mdi) > 3;
+    }
     isReversalStarted() {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));

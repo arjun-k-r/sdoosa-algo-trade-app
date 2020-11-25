@@ -56,9 +56,7 @@ module.exports = class {
         return this.nCrossOvers(n).filter(c => c).length === 1;
     }
 
-    isCrossOver() {
-        const lastCandle = this.lastCandle;
-        const last = this.last;
+    isCrossOver(lastCandle = this.lastCandle, last = this.last) {
         return this.isUpTrend() ? lastCandle.open < last && last < lastCandle.close : lastCandle.open > last && last > lastCandle.close;
     }
 };

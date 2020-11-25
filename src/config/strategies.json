@@ -11,7 +11,7 @@
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
     "withRiskManagement": {
-      "totalCapital": 2000,
+      "totalCapital": 5000,
       "riskPercentagePerTrade": 1.0,
       "maxTrades": 50
     },

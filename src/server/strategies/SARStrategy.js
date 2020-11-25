@@ -188,6 +188,7 @@ class SARStrategy extends BaseStrategy {
     consoleLog("=========================================================================================");
     const adx = new ADX(traceCandles);
     const vwap = new VWAP(candles);
+    // const secondLastCandle = candles[candles.length - 2];
     const lastCandle = candles[candles.length - 1];
     const sidewayMarket = isSideWayMarket(traceCandles);
     consoleLog(lastCandle.date.toLocaleDateString(), lastCandle.date.toLocaleTimeString());
@@ -197,17 +198,25 @@ class SARStrategy extends BaseStrategy {
     // if (sidewayMarket) {
     //   return;
     // }
-    if ((adx.isUpTrend() !== upTrend)) {
+    if (!adx.strongGap())
       return;
+    if ((adx.isUpTrend() !== upTrend)) {
+      if (vwap.isNear()) {
+        if (vwap.isUpTrend() !== upTrend) {
+          return;
+        }
+        if (vwap.isCrossOver())
+          return;
+      }
     }
+
+
     signalType.push(markets[sidewayMarket ? 1 : 0]);
     const chartPattern = this.chartPatternConfirm(upTrend, traceCandles);
     if (!chartPattern) {
       return;
     }
-    if (vwap.isNear() && vwap.isUpTrend() !== upTrend) {
-      return;
-    }
+
     const bb = new BollingerBands(traceCandles);
     if (!bb.isVolatile()) {
       return;
@@ -223,27 +232,27 @@ class SARStrategy extends BaseStrategy {
       return;
     }
     signalType.push("ADX:reversal");
-    // let confirmMomentum = false;
-    // if (vwap.isCrossOver()) {
-    //   signalType.push(trendConfirmations[1]);
-    //   if (vwap.isUpTrend() === upTrend) {
-    //     if (adx.isTrendGrowing()) {
-    //       signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Growing");
-    //       confirmMomentum = true;
-    //     }
-    //   } else {
-    //     if (adx.isTrendLosing()) {
-    //       signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Losing");
-    //       confirmMomentum = true;
-    //     }
-    //   }
-    // } else {
-    //   signalType.push("NRML");
-    //   confirmMomentum = true;
-    // }
-    // if (!confirmMomentum) {
-    //   return;
-    // }
+    let confirmMomentum = false;
+    if (vwap.isCrossOver()) {
+      signalType.push(trendConfirmations[1]);
+      if (vwap.isUpTrend() === upTrend) {
+        if (adx.isTrendGrowing()) {
+          signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Growing");
+          confirmMomentum = true;
+        }
+      } else {
+        if (adx.isTrendLosing()) {
+          signalType.push(trendConfirmations[1] + ":CrossOver@" + vwap.last + " Losing");
+          confirmMomentum = true;
+        }
+      }
+    } else {
+      signalType.push("NRML");
+      confirmMomentum = true;
+    }
+    if (!confirmMomentum) {
+      return;
+    }
     if (bb.isVolatile(2)) {
       signalType.push("High:Volitility");
       if (!bb.inContact(upTrend)) {

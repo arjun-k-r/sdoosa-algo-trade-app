@@ -24,8 +24,6 @@ import Upstox from '../brokers/upstox/Upstox.js';
 const config = getConfig();
 const strategies = getStrategies();
 const skipDate = 0;
-
-
 class BaseStrategy {
   constructor(name) {
     this.name = name;

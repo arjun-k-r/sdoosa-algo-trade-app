@@ -5,8 +5,8 @@
     "brokers": [
       "zerodha"
     ],
-    "startTime": "10:00:00",
-    "stopTime": "14:30:00",
+    "startTime": "9:30:00",
+    "stopTime": "14:45:00",
     "candlesInterval": 5,
     "traceCandlesInterval": 5,
     "enableRiskManagement": true,
@@ -20,8 +20,8 @@
       "margin": 10
     },
     "trailSL": false,
-    "slPercentage": 0.3,
-    "targetPercentage": 0.6,
+    "slPercentage": 0.4,
+    "targetPercentage": 0.8,
     "stocks": [
       "ACC",
       "ADANIENT",

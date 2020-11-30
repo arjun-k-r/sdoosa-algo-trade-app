@@ -50,12 +50,15 @@ module.exports = class {
     overSold(last = this.last) {
         return last.d <= 20;
     }
+    isOver() {
+        return this.overSold() || this.overBrought();
+    }
     strongCrossOver() {
         return this.uniqueCrossOver() && this.reversalStarted() && (this.longMomentum() ? this.overSold() : this.overBrought());
     }
     confirmMomentum(uptrend) {
         // console.log(uptrend, this.overSold(), this.overBrought());
-        return (uptrend ? this.longMomentum() : this.shortMomentum()) && this.strongCrossOver();
+        return (uptrend ? this.longMomentum() : this.shortMomentum());
     }
     calculate(candles = this.candles) {
         let period = 14;

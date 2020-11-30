@@ -22,6 +22,9 @@ module.exports = class {
     isTrending(last = this.last) {
         return last.adx > 25;
     }
+    isMinTrending(last = this.last) {
+        return last.adx > 35;
+    }
     isStrongTrend(last = this.last) {
         return last.adx > 50;
     }
@@ -47,12 +50,15 @@ module.exports = class {
     heavyTrendGrowing() {
         const results = this.results;
         const [secondLast, last] = results.slice(Math.max(results.length - 2, 0));
-        return (secondLast.adx + 1.5) < last.adx;
+        return (secondLast.adx + 1) < last.adx;
     }
-    strongGap(last = this.last) {
-        return Math.abs(last.pdi - last.mdi) > 3;
+    gap(last = this.last) {
+        return Math.abs(last.pdi - last.mdi);
     }
-    isReversalStarted() {
+    haveMinGap(minGap = 3) {
+        return this.gap() > minGap;
+    }
+    isReversalStarted(n = 2) {
         const results = this.results;
         const nResults = results.slice(Math.max(results.length - 3, 0));
         const arr = nResults.map(r => r.adx);
@@ -65,7 +71,12 @@ module.exports = class {
         //     return true;
         // if ([!rev, rev1, !rev2].filter(r => r).length === 3)
         //     return true;
-        return [!rev, rev1, !rev2].filter(r => r).length > 1;
+        // if (rev1 && !rev2) {
+        //     // return true;
+        //     return !rev;
+        // }
+        if (rev1)
+            return [!rev, rev1, !rev2].filter(r => r).length >= n;
     }
     crossOverInput() {
         const results = this.results;

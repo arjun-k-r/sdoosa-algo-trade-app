@@ -15,11 +15,18 @@ module.exports = class {
     }
     calculate(candles = this.candles) {
         const formattedInput = formatToTrendWaysInput(candles);
-        return tw.floorPivots(formattedInput);
+        const results = tw.floorPivots(formattedInput);
+        return results.map(result => {
+            result.floor.cr = (result.h + result.l) / 2;
+            result.floor.cs = (result.floor.pl - result.floor.cr) + result.floor.pl;
+            result.floor.width = (Math.abs(result.floor.cr - result.floor.cs) / result.floor.pl) * 100;
+            return result.floor;
+        });
     }
-    process() {
-        const lastCandle = this.lastCandle;
-        console.log(this.last);
-        return lastCandle;
+    isTrending() {
+        return this.last.width < .5;
+    }
+    isStrongTrending() {
+        return this.last.width < .25;
     }
 };

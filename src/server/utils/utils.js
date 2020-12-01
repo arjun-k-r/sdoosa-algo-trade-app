@@ -501,8 +501,8 @@ export function formatToTrendWaysInput(candles) {
   });
 }
 
-export function splitCandlesByDate(candles) {
-  const groupedData = _.groupBy(candles, candle => candle.date.toLocaleDateString());
+export function splitCandlesBy(candles, splitBy = candle => candle.date.toLocaleDateString()) {
+  const groupedData = _.groupBy(candles, splitBy);
   return groupedData;
 }
 
@@ -512,8 +512,8 @@ export function mergeCandles(arr) {
     return {
       open: formatted.open[0],
       close: formatted.close[formatted.close.length - 1],
-      high: Math.max(formatted.high),
-      low: Math.min(formatted.low),
+      high: Math.max(...formatted.high),
+      low: Math.min(...formatted.low),
       volume: formatted.volume.reduce((acc, v) => acc + v, 0),
       date: a[0].date,
       timestamp: a[0].date,
@@ -522,7 +522,7 @@ export function mergeCandles(arr) {
 }
 
 export function splitAndMergeCandles(candles) {
-  const groupedData = splitCandlesByDate(candles);
+  const groupedData = splitCandlesBy(candles);
   const arr = Object.keys(groupedData).map(key => groupedData[key]);
   return mergeCandles(arr);
 }

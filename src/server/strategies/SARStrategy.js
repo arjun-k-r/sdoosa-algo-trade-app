@@ -15,11 +15,12 @@ import {
   shouldPlaceTrade,
   isNear,
   isSideWayMarket,
+  splitAndMergeCandles
   // getAvgCandleSize,
   // formatTimestampToString
 } from '../utils/utils.js';
 
-// import MACD from "../indicators/MACD.js";
+import PivotPoints from "../indicators/PivotPoints.js";
 import SAR from "../indicators/SAR.js";
 import ADX from "../indicators/ADX.js";
 import BollingerBands from "../indicators/BollingerBands.js";
@@ -123,40 +124,15 @@ class SARStrategy extends BaseStrategy {
     return tops;
   }
   backTesting() {
-    return this.fetchTraceCandlesHistory().then(() => {
-      const intialData = _.find(this.stocksCache, sc => sc.tradingSymbol === this.stocks[0]);
-      for (let i = 0; i < intialData.candles.length; i++) {
-        const lastCandle = intialData.candles[i];
-        const newDate = new Date();
-        newDate.setHours(lastCandle.date.getHours());
-        newDate.setMinutes(lastCandle.date.getMinutes());
-        newDate.setSeconds(lastCandle.date.getSeconds());
-        if (newDate.getTime() > this.strategyStartTime.getTime())
-          if (newDate.getTime() < this.strategyStopTime.getTime()) {
-            const dataSets = [];
-            _.each(this.stocks, tradingSymbol => {
-              const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-              if (data && data.traceCandles && data.traceCandles.length) {
-                const candles = data.candles;
-                if (candles && candles.length) {
-                  const sliced = candles.slice(0, i + 1);
-                  dataSets.push({
-                    ...data,
-                    traceCandles: [].concat(data.traceCandlesPrevDays, sliced),
-                    candles: sliced
-                  });
-                }
-              }
-            });
-            const topSet = this.findTop(dataSets);
-            _.each(topSet, top => {
-              const tradingSymbol = top.tradingSymbol;
-              const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
-              this.findSupportAndResistance(tradingSymbol, top.candles, top.traceCandles, data, top.change > 0);
-            });
-          }
-      }
-
+    return this.backTestingCandles().then((dss) => {
+      _.each(dss, dataSets => {
+        const topSet = this.findTop(dataSets);
+        _.each(topSet, top => {
+          const tradingSymbol = top.tradingSymbol;
+          const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
+          this.findSupportAndResistance(tradingSymbol, top.candles, top.traceCandles, data, top.change > 0);
+        });
+      });
       logger.info(`
           total trades : ${this.backTestSignalCount} 
           profit trades : ${this.backTestProfit} 
@@ -188,7 +164,8 @@ class SARStrategy extends BaseStrategy {
     const rsi = new RSI(traceCandles);
     const bb = new BollingerBands(traceCandles);
     const vwap = new VWAP(candles);
-
+    const pivotPoints = new PivotPoints(splitAndMergeCandles(data.traceCandlesPrevDays));
+    console.log(pivotPoints.isTrending(), pivotPoints.isStrongTrending());
     if (sidewayMarket)
       return;
 

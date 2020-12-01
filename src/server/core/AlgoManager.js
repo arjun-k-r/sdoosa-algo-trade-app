@@ -78,8 +78,8 @@ class AlgoManager {
           details: err
         });
       });
-    } else if (broker === 'upstox') {
-
+    } else {
+      // if (broker === 'upstox') 
       this.algoRunning[broker] = true;
 
       // start trade manager first

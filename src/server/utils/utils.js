@@ -478,7 +478,8 @@ export function formatToInput(candles) {
     close: [],
     high: [],
     low: [],
-    volume: []
+    volume: [],
+    date: []
   };
   for (let i = 0; i < candles.length; i++) {
     Object.keys(result).forEach(key => {
@@ -498,6 +499,32 @@ export function formatToTrendWaysInput(candles) {
       v: c.volume
     };
   });
+}
+
+export function splitCandlesByDate(candles) {
+  const groupedData = _.groupBy(candles, candle => candle.date.toLocaleDateString());
+  return groupedData;
+}
+
+export function mergeCandles(arr) {
+  return arr.map(a => {
+    const formatted = formatToInput(a);
+    return {
+      open: formatted.open[0],
+      close: formatted.close[formatted.close.length - 1],
+      high: Math.max(formatted.high),
+      low: Math.min(formatted.low),
+      volume: formatted.volume.reduce((acc, v) => acc + v, 0),
+      date: a[0].date,
+      timestamp: a[0].date,
+    };
+  });
+}
+
+export function splitAndMergeCandles(candles) {
+  const groupedData = splitCandlesByDate(candles);
+  const arr = Object.keys(groupedData).map(key => groupedData[key]);
+  return mergeCandles(arr);
 }
 
 export function soundAlert(n = 10) {

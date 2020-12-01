@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 const APP_STORAGE_PATH = path.resolve(__dirname, '..');
-let config = null, users = null, strategies = null, holidays = null;
+let config = null, users = null, strategies = null, holidays = null, samples = null;
 
 export const getAppStoragePath = () => {
   return APP_STORAGE_PATH;
@@ -72,4 +72,21 @@ export const getHolidays = () => {
     process.exit(1);
   }
   return holidays;
+};
+
+
+export const getSamples = () => {
+
+  if (samples) {
+    return samples;
+  }
+
+  const samplesJsonFilePath = [APP_STORAGE_PATH, 'config', 'samples.json'].join(path.sep);
+  try {
+    samples = fs.readJsonSync(samplesJsonFilePath);
+  } catch (err) {
+    console.error(`Unable to load config from file ${configJsonFilePath}. Error: `, err);
+    process.exit(1);
+  }
+  return samples;
 };

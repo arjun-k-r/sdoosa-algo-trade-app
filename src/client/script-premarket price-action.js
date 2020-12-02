@@ -1,6 +1,5 @@
 
-(function start(list, capital, liverage, maxTrades, targetPer, stopLossPer) {
-
+(function start(list, capital, liverage, targetPer, stopLossPer, trailingStopLossPer) {
     const roundOff = (value) => {
         return value.toFixed(2);
     };
@@ -16,8 +15,17 @@
         }
         return value;
     };
+
+    const findNearestBreakPoint = (points, cmp) => {
+        const a = Math.abs(points[0] - cmp);
+        const b = Math.abs(points[1] - cmp);
+        const point = a > b ? points[1] : points[0];
+        const near = Math.abs(point - cmp) / cmp * 100;
+        return [point, near];
+    };
+
     const totalCapital = capital * liverage;
-    const oneTradeCapital = totalCapital / maxTrades;
+    const oneTradeCapital = totalCapital / list.length;
     return processPreOpenMarket();
 
     async function processPreOpenMarket() {
@@ -40,36 +48,49 @@
             };
 
             const cmp = r.metadata.lastPrice;
-            if (r.metadata.pChange > 0) {
+            o.cmp = cmp;
+            o.pChange = r.metadata.pChange;
+            o.previousClose = r.metadata.previousClose;
+
+            const [nearestBreakPoint, near] = findNearestBreakPoint([signal.u, signal.l], cmp);
+            o.near = near;
+            if (nearestBreakPoint === signal.u) {
                 if (signal.u > cmp) {
                     o.crossed = false;
+                    o.isBuy = true;
                 } else {
                     o.crossed = true;
                     o.msg = "upper limit crossed";
+                    o.isBuy = false;
                 }
-                o.limit = signal.u;
-                o.t = roundToValidPrice(signal.u * (targetPer / 100));
-                o.sl = roundToValidPrice(signal.u * (stopLossPer / 100));
-                o.isBuy = true;
-                o.quantity = parseInt(oneTradeCapital / o.limit);
+                o.trigger = signal.u;
             } else {
                 if (signal.l < cmp) {
                     o.crossed = false;
+                    o.isBuy = false;
                 } else {
                     o.crossed = true;
                     o.msg = "lower limit crossed";
+                    o.isBuy = true;
                 }
-                o.limit = signal.l;
-                o.t = roundToValidPrice(signal.l * (targetPer / 100));
-                o.sl = roundToValidPrice(signal.l * (stopLossPer / 100));
-                o.isBuy = false;
-                o.quantity = parseInt(oneTradeCapital / o.limit);
+                o.trigger = signal.l;
             }
+            if (o.isBuy) {
+                o.price = o.trigger + .05;
+            } else {
+                o.price = o.trigger - .05;
+            }
+            o.t = roundToValidPrice(o.price * (targetPer / 100));
+            o.sl = roundToValidPrice(o.price * (stopLossPer / 100));
+            o.tsl = Math.round(roundToValidPrice(o.price * (trailingStopLossPer / 100)) / 0.05);
+
+            o.quantity = parseInt(oneTradeCapital / o.price);
             output.push(o);
         });
 
-        return output;
-
+        return output.sort((a, b) => {
+            return a.near - b.near;
+        });
     }
 
 
@@ -100,32 +121,36 @@
     }
 })([
     {
-        symbol: "INDUSINDBK",
-        u: 863,
-        l: 849
+        symbol: "PEL",
+        u: 1438,
+        l: 1400
     }, {
-        symbol: "ADANIPORTS",
-        u: 416,
-        l: 407
+        symbol: "DRREDDY",
+        u: 4865,
+        l: 4800
     }, {
-        symbol: "PVR",
-        u: 1330,
-        l: 1300
+        symbol: "SRTRANSFIN",
+        u: 1061,
+        l: 1021
     },
     {
-        symbol: "ICICIBANK",
-        u: 479,
-        l: 470
+        symbol: "GODREJPROP",
+        u: 1210,
+        l: 1175
     }, {
-        symbol: "INFRATEL",
-        u: 223,
-        l: 213
+        symbol: "ADANIPORTS",
+        u: 426,
+        l: 416
+    }, {
+        symbol: "INDUSINDBK",
+        u: 900,
+        l: 870
     }, {
         symbol: "M&M",
-        u: 736,
+        u: 737,
         l: 717
     }
-], 15000, 5, 4, .4, .2)
+], 15000, 5, 1.2, .4, .4)
     .then((results) => {
         // console.clear();
         console.log(JSON.stringify(results, null, 4));

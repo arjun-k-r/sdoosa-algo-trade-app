@@ -184,6 +184,40 @@ class BaseStrategy {
     return true;
   }
 
+  backTestingCandles() {
+    return this.fetchTraceCandlesHistory().then(() => {
+      const intialData = _.find(this.stocksCache, sc => sc.tradingSymbol === this.stocks[0]);
+      const results = [];
+      for (let i = 0; i < intialData.candles.length; i++) {
+        const lastCandle = intialData.candles[i];
+        const newDate = new Date();
+        newDate.setHours(lastCandle.date.getHours());
+        newDate.setMinutes(lastCandle.date.getMinutes());
+        newDate.setSeconds(lastCandle.date.getSeconds());
+        if (newDate.getTime() > this.strategyStartTime.getTime())
+          if (newDate.getTime() < this.strategyStopTime.getTime()) {
+            const dataSets = [];
+            _.each(this.stocks, tradingSymbol => {
+              const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
+              if (data && data.traceCandles && data.traceCandles.length) {
+                const candles = data.candles;
+                if (candles && candles.length) {
+                  const sliced = candles.slice(0, i + 1);
+                  dataSets.push({
+                    ...data,
+                    traceCandles: [].concat(data.traceCandlesPrevDays, sliced),
+                    candles: sliced
+                  });
+                }
+              }
+            });
+            results.push(dataSets);
+          }
+      }
+      return results;
+    });
+  }
+
   getCandles(tradingSymbol) {
     const data = _.find(this.stocksCache, sc => sc.tradingSymbol === tradingSymbol);
     return data ? (data.candles || []) : [];

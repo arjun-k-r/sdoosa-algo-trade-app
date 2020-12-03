@@ -58,33 +58,53 @@
                 if (signal.u > cmp) {
                     o.crossed = false;
                     o.isBuy = true;
+                    o.trigger = signal.u;
                 } else {
                     o.crossed = true;
                     o.msg = "upper limit crossed";
-                    o.isBuy = false;
+                    if (r.reverse === true) {
+                        o.isBuy = false;
+                        o.trigger = signal.u;
+                    } else {
+                        o.isBuy = true;
+                        o.trigger = cmp;
+                    }
                 }
-                o.trigger = signal.u;
             } else {
                 if (signal.l < cmp) {
                     o.crossed = false;
                     o.isBuy = false;
+                    o.trigger = signal.l;
                 } else {
                     o.crossed = true;
                     o.msg = "lower limit crossed";
-                    o.isBuy = true;
+                    if (r.reverse === true) {
+                        o.isBuy = true;
+                        o.trigger = signal.l;
+                    } else {
+                        o.isBuy = false;
+                        o.trigger = cmp;
+                    }
                 }
-                o.trigger = signal.l;
             }
+            const chg = roundToValidPrice(o.trigger * 0.0002);
             if (o.isBuy) {
+                o.trigger = o.trigger + chg;
                 o.price = o.trigger + .05;
             } else {
+                o.trigger = o.trigger - chg;
                 o.price = o.trigger - .05;
             }
+            o.trigger = roundToValidPrice(o.trigger);
+            o.price = roundToValidPrice(o.price);
             o.t = roundToValidPrice(o.price * (targetPer / 100));
             o.sl = roundToValidPrice(o.price * (stopLossPer / 100));
+
             o.tsl = Math.round(roundToValidPrice(o.price * (trailingStopLossPer / 100)) / 0.05);
+            o.tsl = Math.max(20, o.tsl);
 
             o.quantity = parseInt(oneTradeCapital / o.price);
+
             output.push(o);
         });
 
@@ -121,41 +141,46 @@
     }
 })([
     {
-        symbol: "PEL",
-        u: 1438,
-        l: 1400
+        symbol: "PIDILITIND",
+        u: 1625.75,
+        l: 1598.55
     }, {
-        symbol: "DRREDDY",
-        u: 4865,
-        l: 4800
+        symbol: "AUROPHARMA",
+        u: 904.75,
+        l: 887.85
     }, {
-        symbol: "SRTRANSFIN",
-        u: 1061,
-        l: 1021
+        symbol: "MANAPPURAM",
+        u: 176.6,
+        l: 173.4
     },
     {
+        symbol: "TATAMOTORS",
+        u: 186.15,
+        l: 183
+    }, {
+        symbol: "ICICIBANK",
+        u: 485,
+        l: 478.75
+    }, {
         symbol: "GODREJPROP",
         u: 1210,
-        l: 1175
-    }, {
-        symbol: "ADANIPORTS",
-        u: 426,
-        l: 416
-    }, {
-        symbol: "INDUSINDBK",
-        u: 900,
-        l: 870
-    }, {
-        symbol: "M&M",
-        u: 737,
-        l: 717
+        l: 1180
     }
-], 15000, 5, 1.2, .4, .4)
+], 10000, 5, 2, .2, .15)
     .then((results) => {
-        // console.clear();
+        const message = (signal) => {
+            return `
+            ${signal.isBuy ? "BUY" : "SELL"} ${signal.quantity} ${signal.symbol}  @ Trigger : ${signal.trigger}, Price : ${signal.price}
+            SL : ${signal.sl} , Target : ${signal.t}
+            Trailing : ${signal.tsl}
+            ${signal.msg || ""}
+            `;
+        };
+        console.clear();
+        results.map(message).forEach(o => console.log(o));
         console.log(JSON.stringify(results, null, 4));
 
     })
     .catch(console.error);
 
-
+;
